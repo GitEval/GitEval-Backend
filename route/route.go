@@ -11,21 +11,22 @@ var ProviderSet = wire.NewSet(
 	NewRouter,
 )
 
-type App struct{
+type App struct {
 	r *gin.Engine
 	c *conf.AppConf
 }
-func NewApp(r *gin.Engine,c *conf.AppConf) App {
+
+func NewApp(r *gin.Engine, c *conf.AppConf) App {
 	return App{
 		r: r,
 		c: c,
 	}
 }
+
 //启动
-func (a *App) Run(){
+func (a *App) Run() {
 	a.r.Run(a.c.Addr)
 }
-
 
 func NewRouter() *gin.Engine {
 	r := gin.New()
@@ -36,16 +37,17 @@ func NewRouter() *gin.Engine {
 			"message": "pong",
 		})
 	})
+
 	//后续的接口应该用group来管理
 	//例如:
 	/*
-		UserGroup := r.Group("/api/user")
-	{	
-		//conf也可以注入到user中
-		user := NewUser()
-		UserGroup.POST("/login", user.Login)
-		UserGroup.GET("/getinfo", middleware.JWTAuthMiddleware(), user.GetUserInfo)
-	}
+			UserGroup := r.Group("/api/user")
+		{
+			//conf也可以注入到user中
+			user := NewUser()
+			UserGroup.POST("/login", user.Login)
+			UserGroup.GET("/getinfo", middleware.JWTAuthMiddleware(), user.GetUserInfo)
+		}
 	*/
 	return r
 }
