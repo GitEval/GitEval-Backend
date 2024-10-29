@@ -9,7 +9,8 @@ type AuthService interface {
 	Login(ctx context.Context) (url string, err error)
 }
 
-type authService struct{}
+type authService struct {
+}
 
 func NewAuthService() AuthService {
 	return &authService{}

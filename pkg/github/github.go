@@ -2,14 +2,14 @@ package github
 
 import (
 	"context"
+	"github.com/GitEval/GitEval-Backend/conf"
 	"github.com/google/go-github/v50/github"
-	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
 )
 
 type gitHubAPI struct {
-	client *github.Client //需要额外进行配置
-	cfg    *gitHubConfig  //引用的地址完全相同节约了内存空间
+	client *github.Client     //需要额外进行配置
+	cfg    *conf.GitHubConfig //引用的地址完全相同节约了内存空间
 }
 
 type GitHubAPI interface {
@@ -18,25 +18,9 @@ type GitHubAPI interface {
 	GetUserInfo(ctx context.Context) (*github.User, error)
 }
 
-// 使用统一的cfg管理方案
-type gitHubConfig struct {
-	ClientID     string `yaml:"client_id"`
-	ClientSecret string `yaml:"client_secret"`
-}
-
-var cfg gitHubConfig
-
-func InitGitHubConfig() error {
-	err := viper.UnmarshalKey("github", &cfg)
-	if err != nil {
-		return nil
-	}
-	return nil
-}
-
 func NewGitHubAPI() GitHubAPI {
 	//每次尝试去获取一个新的githubAPI的时候就直接引用这个配置文件的地址
-	return &gitHubAPI{cfg: &cfg}
+	return &gitHubAPI{cfg: conf.Githubconf}
 }
 
 func (g *gitHubAPI) GetLoginUrl() string {
