@@ -12,19 +12,23 @@ var ProviderSet = wire.NewSet(
 )
 
 type App struct {
-	r *gin.Engine
-	c *conf.AppConf
+	r     *gin.Engine
+	c     *conf.AppConf
+	clean func()
 }
 
-func NewApp(r *gin.Engine, c *conf.AppConf) App {
+func NewApp(r *gin.Engine, c *conf.AppConf, clean func()) App {
 	return App{
-		r: r,
-		c: c,
+		r:     r,
+		c:     c,
+		clean: clean,
 	}
 }
 
-//启动
+// 启动
 func (a *App) Run() {
+	//启动map的定时清理任务
+	go a.clean()
 	a.r.Run(a.c.Addr)
 }
 
