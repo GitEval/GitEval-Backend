@@ -2,3 +2,6 @@
 ## 示例配置
 app:
   addr: "0.0.0.0:8080"
+github:
+  client-id: "12345678"
+  client-secret: "12345678"
