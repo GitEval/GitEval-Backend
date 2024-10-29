@@ -95,7 +95,7 @@ func (s *authService) CallBack(ctx context.Context, code string) (userId int64, 
 		if err != nil {
 			return 0, err
 		}
-		//存储用户到
+		//存储用户
 		s.githubAPI.SetClient(user.ID, client)
 	}
 
