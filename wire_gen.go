@@ -7,8 +7,8 @@
 package main
 
 import (
+	"github.com/GitEval/GitEval-Backend/api/route"
 	"github.com/GitEval/GitEval-Backend/conf"
-	"github.com/GitEval/GitEval-Backend/route"
 )
 
 // Injectors from wire.go:

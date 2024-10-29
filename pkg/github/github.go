@@ -5,38 +5,51 @@ import (
 	"github.com/google/go-github/v50/github"
 	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
+	"sync"
 )
-
-type gitHubAPI struct {
-	client *github.Client //需要额外进行配置
-	cfg    *gitHubConfig  //引用的地址完全相同节约了内存空间
-}
 
 type GitHubAPI interface {
 	GetLoginUrl() string
-	SetClient(code string) error
-	GetUserInfo(ctx context.Context) (*github.User, error)
+	SetClient(userID int64, client *github.Client)
+	GetClientFromMap(userID int64) (*github.Client, bool)
+	GetClientByCode(code string) (*github.Client, error)
+	GetUserInfo(ctx context.Context, client *github.Client) (*github.User, error)
+}
+
+// gitHubAPI 结构体
+type gitHubAPI struct {
+	clients sync.Map      // 使用 sync.Map 实现并发安全
+	cfg     *gitHubConfig // 引用的地址完全相同节约了内存空间
 }
 
 // 使用统一的cfg管理方案
 type gitHubConfig struct {
-	ClientID     string `yaml:"client_id"`
-	ClientSecret string `yaml:"client_secret"`
+	ClientID     string `yaml:"clientID"`
+	ClientSecret string `yaml:"clientSecret"`
 }
 
-var cfg gitHubConfig
-
-func InitGitHubConfig() error {
+func NewGitHubAPI() GitHubAPI {
+	var cfg gitHubConfig
 	err := viper.UnmarshalKey("github", &cfg)
 	if err != nil {
 		return nil
 	}
-	return nil
-}
-
-func NewGitHubAPI() GitHubAPI {
 	//每次尝试去获取一个新的githubAPI的时候就直接引用这个配置文件的地址
 	return &gitHubAPI{cfg: &cfg}
+}
+
+// SetClient 设置用户的 GitHub 客户端
+func (g *gitHubAPI) SetClient(userID int64, client *github.Client) {
+	g.clients.Store(userID, client) // 使用 Store 方法
+}
+
+// GetClient 获取用户的 GitHub 客户端
+func (g *gitHubAPI) GetClientFromMap(userID int64) (*github.Client, bool) {
+	client, exists := g.clients.Load(userID) // 使用 Load 方法
+	if exists {
+		return client.(*github.Client), true // 类型断言
+	}
+	return nil, false
 }
 
 func (g *gitHubAPI) GetLoginUrl() string {
@@ -44,28 +57,27 @@ func (g *gitHubAPI) GetLoginUrl() string {
 	return redirectURL
 }
 
-func (g *gitHubAPI) SetClient(code string) error {
+func (g *gitHubAPI) GetClientByCode(code string) (*github.Client, error) {
 	// 获取 access token
 	token, err := g.getAccessToken(code)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// 使用 access token 创建 GitHub 客户端
 	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
 	tc := oauth2.NewClient(context.Background(), ts)
 	client := github.NewClient(tc)
-	g.client = client
-	return nil
+
+	return client, nil
 }
 
-func (g *gitHubAPI) GetUserInfo(ctx context.Context) (*github.User, error) {
-	// 获取用户信息
-	user, _, err := g.client.Users.Get(ctx, "")
+func (g *gitHubAPI) GetUserInfo(ctx context.Context, client *github.Client) (*github.User, error) {
+	userInfo, _, err := client.Users.Get(ctx, "")
 	if err != nil {
-		return &github.User{}, err
+		return nil, err
 	}
-	return user, nil
+	return userInfo, nil
 }
 
 func (g *gitHubAPI) GetReposDetailList(repoUrls []string) (string, error) {

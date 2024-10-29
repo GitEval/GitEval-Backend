@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/GitEval/GitEval-Backend/api/request"
 	"github.com/GitEval/GitEval-Backend/service"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -41,4 +42,30 @@ func (c *authController) Login(ctx *gin.Context) error {
 	// 重定向到 URL
 	ctx.Redirect(http.StatusFound, url) // HTTP 302
 	return nil                          // 重定向后通常不需要返回
+}
+
+func (c *authController) CallBack(ctx *gin.Context) error {
+	// 绑定查询参数
+	var req request.CallBackReq
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return nil
+	}
+
+	userid, err := c.authService.CallBack(ctx, req.Code)
+	if err != nil {
+		return err
+	}
+
+	//把userid存到jwt中去,这里暂时还没写,凑合着先返回
+	//需要返回一个jwt
+	ctx.JSON(http.StatusOK, gin.H{"user_id": userid})
+
+	return nil
+}
+
+func (c *authController) Logout(ctx *gin.Context) error {
+
+	//删除用户的当前jwt并将对应当前jwt列入黑名单
+	return nil
 }
