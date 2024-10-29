@@ -1,0 +1,174 @@
+Index: model/model.go
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package model
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/model/model.go b/model/model.go
+--- a/model/model.go	(revision 3f81b5773058ee92f42ae9bf44f998c4687dfb44)
++++ b/model/model.go	(date 1730212995169)
+@@ -1,1 +1,25 @@
+-package model
+\ No newline at end of file
++package model
++
++type User struct {
++	LoginName         string  `json:"login_name"`          //用户的登录名
++	Name              *string `json:"name"`                //真实姓名
++	Location          *string `json:"location"`            //地区
++	Email             string  `json:"email"`               //邮箱
++	Following         int     `json:"following"`           //关注数
++	Followers         int     `json:"followers"`           //粉丝数
++	Blog              *string `json:"blog"`                //博客连接
++	Bio               *string `json:"Bio"`                 //用户的个人简介
++	PublicRepos       int     `json:"public_repos"`        //用户公开的仓库的数量
++	TotalPrivateRepos int     `json:"total_private_repos"` //用户的私有仓库总数
++	Company           *string `json:"company"`             //用户所属的公司
++	AvatarURL         string  `json:"avatar_url"`          //用户头像的 URL
++	Collaborators     int     `json:"collaborators"`       //协作者的数量
++	Nationality       *string `json:"nationality"`         //国籍
++	Score             float64 `json:"score"`               //评分
++}
++
++type FollowingContact struct {
++	//subject 关注 object
++	Subject string `json:"subject"` //主体
++	Object  string `json:"object"`  //被关注的客体
++}
+Index: conf/config-example.yaml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>\r\n## 示例配置\r\napp:\r\n  addr: \"0.0.0.0:8080\"
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/conf/config-example.yaml b/conf/config-example.yaml
+--- a/conf/config-example.yaml	(revision 3f81b5773058ee92f42ae9bf44f998c4687dfb44)
++++ b/conf/config-example.yaml	(date 1730212995167)
+@@ -1,4 +1,7 @@
+ 
+ ## 示例配置
+ app:
+-  addr: "0.0.0.0:8080"
+\ No newline at end of file
++  addr: "0.0.0.0:8080"
++github:
++  client-id: "12345678"
++  client-secret: "12345678"
+\ No newline at end of file
+Index: conf/conf.go
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package conf\r\n\r\nimport \"github.com/google/wire\"\r\n\r\nvar ProviderSet = wire.NewSet(\r\n\tNewVipperSetting,\r\n\tNewAppConf,\r\n)\r\n\r\ntype AppConf struct {\r\n\tAddr string `json:\"addr\"`\r\n\t//其他配置也可以加到这个里面\r\n}\r\n\r\nfunc NewAppConf(s *VipperSetting) *AppConf {\r\n\tvar appconf = &AppConf{}\r\n\ts.ReadSection(\"app\", appconf)\r\n\treturn appconf\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/conf/conf.go b/conf/conf.go
+--- a/conf/conf.go	(revision 3f81b5773058ee92f42ae9bf44f998c4687dfb44)
++++ b/conf/conf.go	(date 1730212995165)
+@@ -5,15 +5,27 @@
+ var ProviderSet = wire.NewSet(
+ 	NewVipperSetting,
+ 	NewAppConf,
++	NewGitHubConfig,
+ )
+ 
+ type AppConf struct {
+-	Addr string `json:"addr"`
++	Addr string `yaml:"addr"`
+ 	//其他配置也可以加到这个里面
+ }
+ 
++// GitHubConfig 使用统一的cfg管理方案
++type GitHubConfig struct {
++	ClientID     string `yaml:"client-id"`
++	ClientSecret string `yaml:"client-secret"`
++}
++
++var Githubconf = &GitHubConfig{}
++
+ func NewAppConf(s *VipperSetting) *AppConf {
+ 	var appconf = &AppConf{}
+ 	s.ReadSection("app", appconf)
+ 	return appconf
+ }
++func NewGitHubConfig(s *VipperSetting) {
++	s.ReadSection("github", Githubconf)
++}
+Index: .gitignore
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>conf/config.yaml\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.gitignore b/.gitignore
+--- a/.gitignore	(revision 3f81b5773058ee92f42ae9bf44f998c4687dfb44)
++++ b/.gitignore	(date 1730212995158)
+@@ -1,1 +1,2 @@
+ conf/config.yaml
++*test.go
+\ No newline at end of file
+Index: service/service.go
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package service\r\n\r\nimport \"github.com/google/wire\"\r\n\r\nvar ProviderSet = wire.NewSet()\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/service/service.go b/service/service.go
+--- a/service/service.go	(revision 3f81b5773058ee92f42ae9bf44f998c4687dfb44)
++++ b/service/service.go	(date 1730212995174)
+@@ -2,4 +2,4 @@
+ 
+ import "github.com/google/wire"
+ 
+-var ProviderSet = wire.NewSet()
++var ProviderSet = wire.NewSet(NewAuthService)
+Index: .idea/modules.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"ProjectModuleManager\">\r\n    <modules>\r\n      <module fileurl=\"file://$PROJECT_DIR$/.idea/GitEval-Backend.iml\" filepath=\"$PROJECT_DIR$/.idea/GitEval-Backend.iml\" />\r\n    </modules>\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/modules.xml b/.idea/modules.xml
+--- a/.idea/modules.xml	(revision 3f81b5773058ee92f42ae9bf44f998c4687dfb44)
++++ b/.idea/modules.xml	(date 1730213046339)
+@@ -2,7 +2,7 @@
+ <project version="4">
+   <component name="ProjectModuleManager">
+     <modules>
+-      <module fileurl="file://$PROJECT_DIR$/.idea/GitEval-Backend.iml" filepath="$PROJECT_DIR$/.idea/GitEval-Backend.iml" />
++      <module fileurl="file://$PROJECT_DIR$/.idea/GitEval-backend.iml" filepath="$PROJECT_DIR$/.idea/GitEval-backend.iml" />
+     </modules>
+   </component>
+ </project>
+\ No newline at end of file
+Index: .idea/git_toolbox_prj.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/git_toolbox_prj.xml b/.idea/git_toolbox_prj.xml
+new file mode 100644
+--- /dev/null	(date 1730212995163)
++++ b/.idea/git_toolbox_prj.xml	(date 1730212995163)
+@@ -0,0 +1,15 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="GitToolBoxProjectSettings">
++    <option name="commitMessageIssueKeyValidationOverride">
++      <BoolValueOverride>
++        <option name="enabled" value="true" />
++      </BoolValueOverride>
++    </option>
++    <option name="commitMessageValidationEnabledOverride">
++      <BoolValueOverride>
++        <option name="enabled" value="true" />
++      </BoolValueOverride>
++    </option>
++  </component>
++</project>
+\ No newline at end of file
