@@ -25,8 +25,6 @@ func NewAuthController(authService service.AuthService) AuthController {
 // @Tags Auth
 // @Accept json
 // @Produce json
-// @Param email query string true "邮箱"
-// @Param password query string true "密码"
 // @Success 200 {object} LoginResponse "登录成功"
 // @Failure 400 {object} ErrorResponse "请求参数错误"
 // @Failure 500 {object} ErrorResponse "内部错误"
@@ -44,6 +42,7 @@ func (c *authController) Login(ctx *gin.Context) error {
 	return nil                          // 重定向后通常不需要返回
 }
 
+// CallBack 用户在github授权登录之后会被重定向到这里。进行一个请求的发送进行最终验证登录
 func (c *authController) CallBack(ctx *gin.Context) error {
 	// 绑定查询参数
 	var req request.CallBackReq
