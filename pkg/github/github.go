@@ -2,11 +2,20 @@ package github
 
 import (
 	"context"
+	"github.com/GitEval/GitEval-Backend/conf"
+	"github.com/GitEval/GitEval-Backend/pkg/github/expireMap"
 	"github.com/google/go-github/v50/github"
-	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
-	"sync"
+	"time"
 )
+
+const (
+	ExpireTime = time.Hour * 24 * 7
+)
+
+//cc:
+//接口的声明一般由调用方来决定,比如你的authService只是用到了几个方法,就没必要直接将该接口给它
+//这里我懒得改了，哈哈哈
 
 type GitHubAPI interface {
 	GetLoginUrl() string
@@ -17,33 +26,25 @@ type GitHubAPI interface {
 }
 
 // gitHubAPI 结构体
+// 将其当作处理所有有关github账号的中枢,因为它有map
 type gitHubAPI struct {
-	clients sync.Map      // 使用 sync.Map 实现并发安全
-	cfg     *gitHubConfig // 引用的地址完全相同节约了内存空间
+	clients expireMap.ExpireMap // 使用 sync.Map 实现并发安全
+	cfg     *conf.GitHubConfig  // 引用的地址完全相同节约了内存空间
 }
 
-// 使用统一的cfg管理方案
-type gitHubConfig struct {
-	ClientID     string `yaml:"clientID"`
-	ClientSecret string `yaml:"clientSecret"`
-}
-
-func NewGitHubAPI() GitHubAPI {
-	var cfg gitHubConfig
-	err := viper.UnmarshalKey("github", &cfg)
-	if err != nil {
-		return nil
+func NewGitHubAPI(c *conf.GitHubConfig, clients expireMap.ExpireMap) GitHubAPI {
+	return &gitHubAPI{
+		cfg:     c,
+		clients: clients,
 	}
-	//每次尝试去获取一个新的githubAPI的时候就直接引用这个配置文件的地址
-	return &gitHubAPI{cfg: &cfg}
 }
 
 // SetClient 设置用户的 GitHub 客户端
 func (g *gitHubAPI) SetClient(userID int64, client *github.Client) {
-	g.clients.Store(userID, client) // 使用 Store 方法
+	g.clients.Store(userID, client, ExpireTime) // 使用 Store 方法
 }
 
-// GetClient 获取用户的 GitHub 客户端
+// GetClientFromMap GetClient 获取用户的 GitHub 客户端
 func (g *gitHubAPI) GetClientFromMap(userID int64) (*github.Client, bool) {
 	client, exists := g.clients.Load(userID) // 使用 Load 方法
 	if exists {
