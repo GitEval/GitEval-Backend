@@ -1,45 +1,56 @@
 package model
 
-import "gorm.io/gorm"
-
-// UserDAO 接口
-type UserDAO interface {
-	CreateUser(user *User) error
-	GetUserByID(id int64) (*User, error)
-	UpdateUser(user *User) error
-	DeleteUser(id int64) error
-}
+import (
+	"context"
+	"gorm.io/gorm/clause"
+	"log"
+)
 
 // GormUserDAO 实现了 UserDAO 接口
 type GormUserDAO struct {
-	db *gorm.DB
+	data *Data
 }
 
 // NewGormUserDAO 构造函数
-func NewGormUserDAO(db *gorm.DB) *GormUserDAO {
-	return &GormUserDAO{db: db}
+func NewGormUserDAO(data *Data) *GormUserDAO {
+	return &GormUserDAO{
+		data: data,
+	}
 }
-
-// CreateUser 创建用户
-func (r *GormUserDAO) CreateUser(user *User) error {
-	return r.db.Create(user).Error
+func (o *GormUserDAO) CreateUsers(ctx context.Context, users []User) error {
+	db := o.data.DB(ctx).Table(UserTable)
+	err := db.Clauses(clause.OnConflict{DoNothing: true}).Create(&users).Error
+	if err != nil {
+		log.Println("Error creating user")
+		return err
+	}
+	return nil
 }
-
-// GetUserByID 通过 ID 获取用户
-func (r *GormUserDAO) GetUserByID(id int64) (*User, error) {
-	var user User
-	if err := r.db.First(&user, id).Error; err != nil {
+func (o *GormUserDAO) GetUserByID(ctx context.Context, id int64) (u User, err error) {
+	db := o.data.Mysql.WithContext(ctx).Table(UserTable)
+	err = db.Where("id = ?", id).First(&u).Error
+	if err != nil {
+		log.Println("Error getting user by ID")
+		return User{}, err
+	}
+	return u, nil
+}
+func (o *GormUserDAO) GetFollowingUsersJoinContact(ctx context.Context, id int64) (users []User, err error) {
+	db := o.data.Mysql.WithContext(ctx)
+	err = db.Joins("JOIN contacts ON users.id = contacts.subject AND users.id = ?", id).Find(&users).Error
+	if err != nil {
+		log.Println("Error getting following users")
 		return nil, err
 	}
-	return &user, nil
+	return users, nil
 }
 
-// UpdateUser 更新用户信息
-func (r *GormUserDAO) UpdateUser(user *User) error {
-	return r.db.Save(user).Error
-}
-
-// DeleteUser 删除用户
-func (r *GormUserDAO) DeleteUser(id int64) error {
-	return r.db.Delete(&User{}, id).Error
+func (o *GormUserDAO) GetFollowersUsersJoinContact(ctx context.Context, id int64) (users []User, err error) {
+	db := o.data.Mysql.WithContext(ctx)
+	err = db.Joins("JOIN contacts ON users.id = contacts.object AND users.id =?", id).Find(&users).Error
+	if err != nil {
+		log.Println("Error getting followers users")
+		return nil, err
+	}
+	return users, nil
 }

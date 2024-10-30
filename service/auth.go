@@ -11,14 +11,19 @@ type AuthService interface {
 	CallBack(ctx context.Context, code string) (userId int64, err error)
 }
 
-type authService struct {
-	userDAO   model.UserDAO
-	githubAPI github.GitHubAPI
+type UserServiceProxy interface {
+	InitUser(ctx context.Context, u model.User) (err error)
+	GetUserById(ctx context.Context, id int64) (model.User, error)
 }
 
-func NewAuthService(userDAO model.UserDAO, api github.GitHubAPI) AuthService {
+type authService struct {
+	githubAPI github.GitHubAPI
+	u         UserServiceProxy
+}
+
+func NewAuthService(u UserServiceProxy, api github.GitHubAPI) AuthService {
 	return &authService{
-		userDAO: userDAO,
+		u: u,
 		//因为让其成为中枢，必然要依赖注入到这个authService
 		githubAPI: api,
 	}
@@ -41,14 +46,14 @@ func (s *authService) CallBack(ctx context.Context, code string) (userId int64, 
 	}
 
 	// 根据用户 ID 查找用户
-	user, err := s.userDAO.GetUserByID(userInfo.GetID())
+	user, err := s.u.GetUserById(ctx, userInfo.GetID())
 	if err != nil {
 		return 0, err
 	}
 
 	// 如果用户不存在，创建新用户,如果存在
-	if user == nil {
-		user = &model.User{
+	if (user == model.User{}) {
+		user = model.User{
 			ID:                userInfo.GetID(),
 			AvatarURL:         userInfo.GetAvatarURL(),
 			Name:              userInfo.Name,
@@ -64,7 +69,7 @@ func (s *authService) CallBack(ctx context.Context, code string) (userId int64, 
 			Collaborators:     userInfo.GetCollaborators(),
 		}
 		// 创建用户
-		err = s.userDAO.CreateUser(user)
+		err = s.u.InitUser(ctx, user)
 		if err != nil {
 			return 0, err
 		}
