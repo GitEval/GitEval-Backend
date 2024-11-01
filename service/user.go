@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/GitEval/GitEval-Backend/model"
 	"log"
+	"sort"
 )
 
 const (
@@ -27,6 +28,7 @@ type ContactDAOProxy interface {
 type GithubProxy interface {
 	GetFollowing(ctx context.Context, id int64) []model.User
 	GetFollowers(ctx context.Context, id int64) []model.User
+	CalculateScore(ctx context.Context, id int64, name string) float64
 }
 
 type UserService struct {
@@ -52,7 +54,14 @@ func (s *UserService) InitUser(ctx context.Context, u model.User) (err error) {
 	)
 	users = append(users, u)
 	following := s.g.GetFollowing(ctx, u.ID)
+	users = append(users, following...)
 	followers := s.g.GetFollowers(ctx, u.ID)
+	users = append(users, followers...)
+	//获取分数
+	for _, v := range users {
+		v.Score = s.g.CalculateScore(ctx, u.ID, v.LoginName)
+	}
+	//得到关系
 	followingContact := getContact(u.ID, following, Following)
 	followersContact := getContact(u.ID, followers, Followers)
 	err = s.tx.InTx(ctx, func(ctx context.Context) error {
@@ -80,6 +89,44 @@ func (s *UserService) GetUserById(ctx context.Context, id int64) (model.User, er
 	return s.user.GetUserByID(ctx, id)
 }
 
+// GetLeaderboard 获取排行榜
+func (s *UserService) GetLeaderboard(ctx context.Context, userId int64) ([]model.Leaderboard, error) {
+	var (
+		leaderboard = make([]model.Leaderboard, 0)
+		err         error
+	)
+	user, err := s.user.GetUserByID(ctx, userId)
+	if err != nil {
+		log.Println("get user failed")
+		return nil, err
+	}
+	leaderboard = append(leaderboard, model.Leaderboard{
+		UserID: user.ID,
+		Score:  user.Score,
+	})
+	//获取following
+	followings, err := s.user.GetFollowingUsersJoinContact(ctx, userId)
+	if err != nil {
+		log.Println("get following failed")
+		return nil, err
+	}
+	//获取followers
+	followers, err := s.user.GetFollowersUsersJoinContact(ctx, userId)
+	if err != nil {
+		log.Println("get followers failed")
+		return nil, err
+	}
+	leaderboard = append(leaderboard, getLeaderboard(followings)...)
+	leaderboard = append(leaderboard, getLeaderboard(followers)...)
+	//去重
+	leaderboard = removeTheSame(leaderboard)
+	//从大到小排序
+	sort.Slice(leaderboard, func(i, j int) bool {
+		return leaderboard[i].Score > leaderboard[j].Score
+	})
+	return leaderboard, nil
+}
+
 // 从users中得到相应的关系
 func getContact(Id int64, users []model.User, follow int) []model.FollowingContact {
 	var (
@@ -98,4 +145,28 @@ func getContact(Id int64, users []model.User, follow int) []model.FollowingConta
 		}
 	}
 	return contact
+}
+func getLeaderboard(users []model.User) []model.Leaderboard {
+	var (
+		leaderboard = make([]model.Leaderboard, len(users))
+	)
+	for k, user := range users {
+		leaderboard[k].UserID = user.ID
+		leaderboard[k].Score = user.Score
+	}
+	return leaderboard
+}
+func removeTheSame(s []model.Leaderboard) []model.Leaderboard {
+	var (
+		result = make([]model.Leaderboard, 0)
+		mp     = make(map[int64]float64)
+	)
+
+	for _, v := range s {
+		mp[v.UserID] = v.Score
+	}
+	for k, v := range mp {
+		result = append(result, model.Leaderboard{UserID: k, Score: v})
+	}
+	return result
 }

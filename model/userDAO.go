@@ -19,7 +19,7 @@ func NewGormUserDAO(data *Data) *GormUserDAO {
 }
 func (o *GormUserDAO) CreateUsers(ctx context.Context, users []User) error {
 	db := o.data.DB(ctx).Table(UserTable)
-	err := db.Clauses(clause.OnConflict{DoNothing: true}).Create(&users).Error
+	err := db.Clauses(clause.OnConflict{UpdateAll: true}).Create(&users).Error
 	if err != nil {
 		log.Println("Error creating user")
 		return err

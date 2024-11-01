@@ -3,9 +3,11 @@ package github
 import (
 	"context"
 	"github.com/GitEval/GitEval-Backend/conf"
+	"github.com/GitEval/GitEval-Backend/model"
 	"github.com/GitEval/GitEval-Backend/pkg/github/expireMap"
 	"github.com/google/go-github/v50/github"
 	"golang.org/x/oauth2"
+	"log"
 	"time"
 )
 
@@ -22,7 +24,7 @@ type GitHubAPI interface {
 	SetClient(userID int64, client *github.Client)
 	GetClientFromMap(userID int64) (*github.Client, bool)
 	GetClientByCode(code string) (*github.Client, error)
-	GetUserInfo(ctx context.Context, client *github.Client) (*github.User, error)
+	GetUserInfo(ctx context.Context, client *github.Client, username string) (*github.User, error)
 }
 
 // gitHubAPI 结构体
@@ -73,16 +75,72 @@ func (g *gitHubAPI) GetClientByCode(code string) (*github.Client, error) {
 	return client, nil
 }
 
-func (g *gitHubAPI) GetUserInfo(ctx context.Context, client *github.Client) (*github.User, error) {
-	userInfo, _, err := client.Users.Get(ctx, "")
+func (g *gitHubAPI) GetUserInfo(ctx context.Context, client *github.Client, username string) (*github.User, error) {
+	userInfo, _, err := client.Users.Get(ctx, username)
 	if err != nil {
 		return nil, err
 	}
 	return userInfo, nil
 }
 
-func (g *gitHubAPI) GetReposDetailList(repoUrls []string) (string, error) {
-	return "", nil
+func (g *gitHubAPI) GetFollowing(ctx context.Context, id int64) []model.User {
+	val, exist := g.clients.Load(id)
+	if !exist {
+		log.Println("get github client failed")
+		return nil
+	}
+	client := val.(*github.Client)
+	users, _, err := client.Users.ListFollowing(ctx, "", nil)
+	if err != nil {
+		log.Println("get github following user failed")
+		return nil
+	}
+	return model.TransformUsers(users)
+}
+
+func (g *gitHubAPI) GetFollowers(ctx context.Context, id int64) []model.User {
+	val, exist := g.clients.Load(id)
+	if !exist {
+		log.Println("get github client failed")
+		return nil
+	}
+	client := val.(*github.Client)
+	users, _, err := client.Users.ListFollowers(ctx, "", nil)
+	if err != nil {
+		log.Println("get github following user failed")
+		return nil
+	}
+	return model.TransformUsers(users)
+}
+func (g *gitHubAPI) CalculateScore(ctx context.Context, id int64, name string) float64 {
+	val, exist := g.clients.Load(id)
+	if !exist {
+		log.Println("get github client failed")
+		return 0
+	}
+	client := val.(*github.Client)
+	// 获取用户的公开仓库
+	repos, _, err := client.Repositories.List(ctx, name, nil)
+	if err != nil {
+		log.Printf("Error getting repositories: %v\n", err)
+		return 0
+	}
+	// 计算评分
+	score := calculateScore(repos)
+	return score
+}
+
+// 具体的计算逻辑
+func calculateScore(repos []*github.Repository) float64 {
+	var totalScore float64
+	for _, repo := range repos {
+		if repo.StargazersCount != nil && repo.ForksCount != nil && repo.Size != nil {
+			// 评分公式示例
+			score := float64(*repo.StargazersCount)*0.5 + float64(*repo.ForksCount)*0.3 + float64(*repo.Size)*0.2
+			totalScore += score
+		}
+	}
+	return totalScore
 }
 
 func (g *gitHubAPI) getAccessToken(code string) (string, error) {

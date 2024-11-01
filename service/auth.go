@@ -40,7 +40,7 @@ func (s *authService) CallBack(ctx context.Context, code string) (userId int64, 
 		return 0, err
 	}
 
-	userInfo, err := s.githubAPI.GetUserInfo(ctx, client)
+	userInfo, err := s.githubAPI.GetUserInfo(ctx, client, "")
 	if err != nil {
 		return 0, err
 	}
@@ -53,21 +53,7 @@ func (s *authService) CallBack(ctx context.Context, code string) (userId int64, 
 
 	// 如果用户不存在，创建新用户,如果存在
 	if (user == model.User{}) {
-		user = model.User{
-			ID:                userInfo.GetID(),
-			AvatarURL:         userInfo.GetAvatarURL(),
-			Name:              userInfo.Name,
-			Company:           userInfo.Company,
-			Blog:              userInfo.Blog,
-			Location:          userInfo.Location,
-			Email:             userInfo.GetEmail(),
-			Bio:               userInfo.Bio,
-			PublicRepos:       userInfo.GetPublicRepos(),
-			Followers:         userInfo.GetFollowers(),
-			Following:         userInfo.GetFollowing(),
-			TotalPrivateRepos: userInfo.GetTotalPrivateRepos(),
-			Collaborators:     userInfo.GetCollaborators(),
-		}
+		user = model.TransformUser(userInfo)
 		// 创建用户
 		err = s.u.InitUser(ctx, user)
 		if err != nil {
