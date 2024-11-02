@@ -7,6 +7,7 @@ var ProviderSet = wire.NewSet(
 	NewAppConf,
 	NewGitHubConfig,
 	NewDataConfig,
+	NewLLMConfig,
 )
 
 type AppConf struct {
@@ -20,6 +21,9 @@ type GitHubConfig struct {
 	ClientSecret string `yaml:"client-secret"`
 }
 type DataConfig struct {
+	Addr string `yaml:"addr"`
+}
+type LLMConfig struct {
 	Addr string `yaml:"addr"`
 }
 
@@ -36,5 +40,10 @@ func NewGitHubConfig(s *VipperSetting) *GitHubConfig {
 func NewDataConfig(s *VipperSetting) *DataConfig {
 	var dataConfig = &DataConfig{}
 	s.ReadSection("data", dataConfig)
+	return dataConfig
+}
+func NewLLMConfig(s *VipperSetting) *LLMConfig {
+	var dataConfig = &LLMConfig{}
+	s.ReadSection("llm", dataConfig)
 	return dataConfig
 }

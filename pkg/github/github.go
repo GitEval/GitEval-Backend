@@ -29,6 +29,9 @@ type GitHubAPI interface {
 	GetClientFromMap(userID int64) (*github.Client, bool)
 	GetClientByCode(code string) (*github.Client, error)
 	GetUserInfo(ctx context.Context, client *github.Client, username string) (*github.User, error)
+	GetAllEvents(ctx context.Context, username string, client *github.Client) ([]UserEvent, error)
+	GetRepoDetail(ctx context.Context, repoUrl string, client *github.Client) (*github.Repository, error)
+	GetReadMe(ctx context.Context, repoUrl string, client *github.Client) (readme string, err error)
 }
 
 // gitHubAPI 结构体

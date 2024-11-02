@@ -13,6 +13,7 @@ import (
 type LLMClient interface {
 	GetDomain(ctx context.Context, req GetDomainRequest) (GetDomainResponse, error)
 	GetEvaluation(ctx context.Context, req GetEvaluationRequest) (GetEvaluationResponse, error)
+	GetArea(ctx context.Context, req GetAreaRequest) (GetAreaResponse, error)
 }
 
 // lLMClient 结构体
