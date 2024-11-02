@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/GitEval/GitEval-Backend/conf"
+	"github.com/GitEval/GitEval-Backend/model"
 	"github.com/GitEval/GitEval-Backend/pkg/github/expireMap"
 	"github.com/google/go-github/v50/github"
 	"golang.org/x/oauth2"
@@ -22,20 +23,12 @@ const (
 //接口的声明一般由调用方来决定,比如你的authService只是用到了几个方法,就没必要直接将该接口给它
 //这里我懒得改了，哈哈哈
 
-//sjn:
-//我的理解是这样的,一般来说都是上层调用者需要遵循下层调用者提供的方法
-//尤其是写pkg的话一般是写在被调用方的吧,因为调用者要遵循pkg提供的方法。
-//艹,什么赛博聊天。
-
 type GitHubAPI interface {
 	GetLoginUrl() string
 	SetClient(userID int64, client *github.Client)
 	GetClientFromMap(userID int64) (*github.Client, bool)
 	GetClientByCode(code string) (*github.Client, error)
-	GetUserInfo(ctx context.Context, client *github.Client) (*github.User, error)
-	GetRepoDetail(ctx context.Context, repoUrl string, client *github.Client) (*github.Repository, error)
-	GetReadMe(ctx context.Context, repoUrl string, client *github.Client) (readme string, err error)
-	GetAllEvents(ctx context.Context, username string, client *github.Client) ([]UserEvent, error) //获取用户在github上进行的所有行为的事件,包括commit,fork,create等
+	GetUserInfo(ctx context.Context, client *github.Client, username string) (*github.User, error)
 }
 
 // gitHubAPI 结构体
@@ -86,12 +79,60 @@ func (g *gitHubAPI) GetClientByCode(code string) (*github.Client, error) {
 	return client, nil
 }
 
-func (g *gitHubAPI) GetUserInfo(ctx context.Context, client *github.Client) (*github.User, error) {
-	userInfo, _, err := client.Users.Get(ctx, "")
+func (g *gitHubAPI) GetUserInfo(ctx context.Context, client *github.Client, username string) (*github.User, error) {
+	userInfo, _, err := client.Users.Get(ctx, username)
 	if err != nil {
 		return nil, err
 	}
 	return userInfo, nil
+}
+
+func (g *gitHubAPI) GetFollowing(ctx context.Context, id int64) []model.User {
+	val, exist := g.clients.Load(id)
+	if !exist {
+		log.Println("get github client failed")
+		return nil
+	}
+	client := val.(*github.Client)
+	users, _, err := client.Users.ListFollowing(ctx, "", nil)
+	if err != nil {
+		log.Println("get github following user failed")
+		return nil
+	}
+	return model.TransformUsers(users)
+}
+
+func (g *gitHubAPI) GetFollowers(ctx context.Context, id int64) []model.User {
+	val, exist := g.clients.Load(id)
+	if !exist {
+		log.Println("get github client failed")
+		return nil
+	}
+	client := val.(*github.Client)
+	users, _, err := client.Users.ListFollowers(ctx, "", nil)
+	if err != nil {
+		log.Println("get github following user failed")
+		return nil
+	}
+	return model.TransformUsers(users)
+}
+
+func (g *gitHubAPI) CalculateScore(ctx context.Context, id int64, name string) float64 {
+	val, exist := g.clients.Load(id)
+	if !exist {
+		log.Println("get github client failed")
+		return 0
+	}
+	client := val.(*github.Client)
+	// 获取用户的公开仓库
+	repos, _, err := client.Repositories.List(ctx, name, nil)
+	if err != nil {
+		log.Printf("Error getting repositories: %v\n", err)
+		return 0
+	}
+	// 计算评分
+	score := calculateScore(repos)
+	return score
 }
 
 // GetReposDetailList 根据仓库链接获取仓库的详细信息列表
@@ -240,6 +281,19 @@ func (g *gitHubAPI) parseRepoURL(url string) (owner, repo string, err error) {
 		return "", "", fmt.Errorf("invalid GitHub repository URL")
 	}
 	return parts[0], parts[1], nil
+}
+
+// 具体的计算逻辑
+func calculateScore(repos []*github.Repository) float64 {
+	var totalScore float64
+	for _, repo := range repos {
+		if repo.StargazersCount != nil && repo.ForksCount != nil && repo.Size != nil {
+			// 评分公式示例
+			score := float64(*repo.StargazersCount)*0.5 + float64(*repo.ForksCount)*0.3 + float64(*repo.Size)*0.2
+			totalScore += score
+		}
+	}
+	return totalScore
 }
 
 func (g *gitHubAPI) getAccessToken(code string) (string, error) {

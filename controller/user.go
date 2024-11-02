@@ -1,32 +1,81 @@
 package controller
 
 import (
-	"github.com/GitEval/GitEval-Backend/service"
+	"context"
+	"fmt"
+	"github.com/GitEval/GitEval-Backend/api/request"
+	"github.com/GitEval/GitEval-Backend/api/response"
+	"github.com/GitEval/GitEval-Backend/model"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
 type UserController interface {
-	Login(ctx *gin.Context) error
+	GetUser(ctx *gin.Context)
 }
-
+type UserServiceProxy interface {
+	GetUserById(ctx context.Context, id int64) (model.User, error)
+	GetLeaderboard(ctx context.Context, userId int64) ([]model.Leaderboard, error)
+}
 type userController struct {
-	userService service.UserService
+	userService UserServiceProxy
 }
 
-func NewUserController(userService service.UserService) UserController {
+func NewUserController(userService UserServiceProxy) UserController {
 	return &userController{userService: userService}
 }
 
-func (c *userController) GetUser(ctx *gin.Context) error {
-	url, err := c.UserService.Login(ctx)
-	if err != nil {
-		// 处理错误，比如返回一个错误页面或重定向到错误页面
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return nil // 或根据需要返回其他值
+// GetUser 获取用户
+// @Summary 从userid获取用户
+// @Tags Auth
+// @Accept json request.GetUserInfo
+// @Produce json
+// @Success 200 {object} response.Success "登录成功"
+// @Failure 400 {object} response.Err "请求参数错误"
+// @Router /api/v1/user/get/info [get]
+func (c *userController) GetUser(ctx *gin.Context) {
+	var req request.GetUserInfo
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, response.Err{
+			Err: err,
+		})
+		return
 	}
+	user, err := c.userService.GetUserById(ctx, req.UserID)
+	if err != nil {
+		ctx.JSON(http.StatusOK, response.Err{
+			Err: fmt.Errorf("GetUserById: %w", err),
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, response.Success{
+		Data: user,
+		Msg:  "success",
+	})
+}
 
-	// 重定向到 URL
-	ctx.Redirect(http.StatusFound, url) // HTTP 302
-	return nil                          // 重定向后通常不需要返回
+// GetRanking 获取排行
+// @Summary 根据userid获取用户的score的排行榜
+// @Tags Auth
+// @Accept json request.GetRanking
+// @Produce json
+// @Success 200 {object} response.Success "登录成功"
+// @Failure 400 {object} response.Err "请求参数错误"
+// @Router /api/v1/user/get/rank [get]
+func (c *userController) GetRanking(ctx *gin.Context) {
+	var req request.GetUserInfo
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, response.Err{
+			Err: err,
+		})
+		return
+	}
+	rankings, err := c.userService.GetLeaderboard(ctx, req.UserID)
+	if err != nil {
+		ctx.JSON(http.StatusOK, response.Err{
+			Err: fmt.Errorf("GetLeaderboard: %w", err),
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, response.Success{Data: rankings, Msg: "success"})
 }

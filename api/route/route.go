@@ -38,7 +38,7 @@ func NewRouter() *gin.Engine {
 	r.Use(gin.Recovery())
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"message": "pong",
+			"msg": "pong",
 		})
 	})
 

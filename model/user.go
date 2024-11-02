@@ -1,5 +1,11 @@
 package model
 
+import (
+	"fmt"
+	"github.com/google/go-github/v50/github"
+	"gorm.io/gorm"
+)
+
 const (
 	UserTable    = "users"
 	ContactTable = "contacts"
@@ -27,8 +33,13 @@ type User struct {
 
 type FollowingContact struct {
 	//subject 关注 object
-	Subject int64 `gorm:"column:subject;index:idx_contact" json:"subject"` //主体
-	Object  int64 `gorm:"column:object;index:idx_contact" json:"object"`   //被关注的客体
+	ID      string `gorm:"column:id;primaryKey" json:"id"`
+	Subject int64  `gorm:"column:subject;index:idx_contact" json:"subject"` //主体
+	Object  int64  `gorm:"column:object;index:idx_contact" json:"object"`   //被关注的客体
+}
+type Leaderboard struct {
+	UserID int64   `json:"user_id"`
+	Score  float64 `json:"score"`
 }
 
 func (u *User) TableName() string {
@@ -36,4 +47,36 @@ func (u *User) TableName() string {
 }
 func (c *FollowingContact) TableName() string {
 	return ContactTable
+}
+func (c *FollowingContact) GenerateID() {
+	c.ID = fmt.Sprintf("%d->%d", c.Subject, c.Object)
+}
+func (c *FollowingContact) BeforeCreate(tx *gorm.DB) (err error) {
+	c.GenerateID()
+	return nil
+}
+
+func TransformUser(userInfo *github.User) User {
+	return User{
+		ID:                userInfo.GetID(),
+		AvatarURL:         userInfo.GetAvatarURL(),
+		Name:              userInfo.Name,
+		Company:           userInfo.Company,
+		Blog:              userInfo.Blog,
+		Location:          userInfo.Location,
+		Email:             userInfo.GetEmail(),
+		Bio:               userInfo.Bio,
+		PublicRepos:       userInfo.GetPublicRepos(),
+		Followers:         userInfo.GetFollowers(),
+		Following:         userInfo.GetFollowing(),
+		TotalPrivateRepos: userInfo.GetTotalPrivateRepos(),
+		Collaborators:     userInfo.GetCollaborators(),
+	}
+}
+func TransformUsers(users []*github.User) []User {
+	var transformedUsers []User
+	for _, user := range users {
+		transformedUsers = append(transformedUsers, TransformUser(user))
+	}
+	return transformedUsers
 }

@@ -5,3 +5,5 @@ app:
 github:
   client-id: "123"
   client-secret: "123"
+data:
+  addr: "root:12345678@tcp(127.0.0.1:13306)/GitEval?charset=utf8mb4&parseTime=True&loc=Local"
