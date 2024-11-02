@@ -32,13 +32,16 @@ func (e *ExpireMap) Store(key int64, value any, expire time.Duration) {
 	e.mp1.Store(getKey(key), value)
 	e.mp2.Store(getExpireKey(key), time.Now().Add(expire))
 }
+
 func (e *ExpireMap) Load(key int64) (val any, exist bool) {
 	return e.mp1.Load(getKey(key))
 }
+
 func (e *ExpireMap) Delete(key int64) {
 	e.mp1.Delete(getKey(key))
 	e.mp2.Delete(getExpireKey(key))
 }
+
 func (e *ExpireMap) Clean() {
 	for {
 		e.mp1.Range(func(key, value interface{}) bool {
@@ -53,15 +56,18 @@ func (e *ExpireMap) Clean() {
 		time.Sleep(e.sleepTime)
 	}
 }
+
 func checkIfAfter(deadline time.Time) bool {
 	if time.Now().Before(deadline) {
 		return false
 	}
 	return true
 }
+
 func getKey(key int64) string {
 	return fmt.Sprintf("%d", key)
 }
+
 func getExpireKey(key int64) string {
 	return fmt.Sprintf("%d", key) + Expiresuffix
 }

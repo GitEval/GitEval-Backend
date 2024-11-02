@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/GitEval/GitEval-Backend/model"
 	"github.com/GitEval/GitEval-Backend/pkg/github"
+	"github.com/GitEval/GitEval-Backend/pkg/llm"
 )
 
 type AuthService interface {
@@ -14,13 +15,15 @@ type AuthService interface {
 type authService struct {
 	userDAO   model.UserDAO
 	githubAPI github.GitHubAPI
+	llmClient llm.LLMClient
 }
 
-func NewAuthService(userDAO model.UserDAO, api github.GitHubAPI) AuthService {
+func NewAuthService(userDAO model.UserDAO, api github.GitHubAPI, llmClient llm.LLMClient) AuthService {
 	return &authService{
 		userDAO: userDAO,
 		//因为让其成为中枢，必然要依赖注入到这个authService
 		githubAPI: api,
+		llmClient: llmClient,
 	}
 }
 
@@ -70,6 +73,18 @@ func (s *authService) CallBack(ctx context.Context, code string) (userId int64, 
 		}
 		//存储用户
 		s.githubAPI.SetClient(user.ID, client)
+		go func() {
+			//1.评级
+			//获取所有的事件
+			events, err := s.githubAPI.GetAllEvents(ctx, *user.Name, client)
+			if err != nil {
+				return
+			}
+
+			//2.猜测地区
+			//3.猜测领域
+
+		}()
 	}
 
 	return user.ID, nil
