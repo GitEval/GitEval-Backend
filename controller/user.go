@@ -17,6 +17,7 @@ type UserServiceProxy interface {
 	GetUserById(ctx context.Context, id int64) (model.User, error)
 	GetLeaderboard(ctx context.Context, userId int64) ([]model.Leaderboard, error)
 	GetDomains(ctx context.Context, userId int64) []string
+	GetEvaluation(ctx context.Context, userId int64) (string, error)
 }
 type userController struct {
 	userService UserServiceProxy

@@ -127,7 +127,6 @@ type GetEvaluationRequest struct {
 	TotalPublicRepos  int         `json:"total_public_repos"`  // 公开仓库数量
 	UserEvents        []UserEvent `json:"user_events"`         // 用户事件
 	Domains           []string    `json:"domains"`             // 技术领域
-	CreatedAt         string      `json:"created_at"`          // 建号时间
 }
 
 // UserEvent 结构体与 Python 的 UserEvent 对应

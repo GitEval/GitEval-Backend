@@ -197,7 +197,7 @@ func (g *gitHubAPI) GetOrganizations(ctx context.Context, userID int64) ([]*gith
 	return orgs, nil
 }
 
-func (g *gitHubAPI) GetAllEvents(ctx context.Context, username string, client *github.Client) ([]UserEvent, error) {
+func (g *gitHubAPI) GetAllEvents(ctx context.Context, username string, client *github.Client) ([]model.UserEvent, error) {
 	allEvents := make([]*github.Event, 0)
 
 	// 分页设置
@@ -226,14 +226,14 @@ func (g *gitHubAPI) GetAllEvents(ctx context.Context, username string, client *g
 	}
 
 	// 使用一个映射来分类不同的UserEvent
-	userEventsMap := make(map[string]*UserEvent)
+	userEventsMap := make(map[string]*model.UserEvent)
 
 	for _, event := range allEvents {
 		repoName := event.Repo.GetName()
 
 		// 如果该repo的UserEvent还未创建，则初始化
 		if _, exists := userEventsMap[repoName]; !exists {
-			userEventsMap[repoName] = &UserEvent{
+			userEventsMap[repoName] = &model.UserEvent{
 				Commit:      []string{},
 				Issues:      []string{},
 				PullRequest: []string{},
@@ -248,7 +248,7 @@ func (g *gitHubAPI) GetAllEvents(ctx context.Context, username string, client *g
 			userEvent.Commit = append(userEvent.Commit, event.Repo.GetName()) // 这里可以替换为更详细的提交信息
 			// 更新repo信息
 			if userEvent.Repo == nil {
-				userEvent.Repo = &RepoInfo{
+				userEvent.Repo = &model.RepoInfo{
 					Description:      event.Repo.GetDescription(),
 					StargazersCount:  event.Repo.GetStargazersCount(),
 					ForksCount:       event.Repo.GetForksCount(),
@@ -261,7 +261,7 @@ func (g *gitHubAPI) GetAllEvents(ctx context.Context, username string, client *g
 
 		case "IssuesEvent":
 			// 创建 IssuesEventPayload 实例用于存储解析后的数据
-			var payload IssuesEventPayload
+			var payload model.IssuesEventPayload
 
 			// 解析 RawPayload 中的 JSON 数据
 			if err := json.Unmarshal(*event.RawPayload, &payload); err != nil {
@@ -275,7 +275,7 @@ func (g *gitHubAPI) GetAllEvents(ctx context.Context, username string, client *g
 
 		case "PullRequestEvent":
 			// 创建 PullRequestEventPayload 实例用于存储解析后的数据
-			var payload PullRequestEventPayload
+			var payload model.PullRequestEventPayload
 
 			// 解析 RawPayload 中的 JSON 数据
 			if err := json.Unmarshal(*event.RawPayload, &payload); err != nil {
@@ -291,7 +291,7 @@ func (g *gitHubAPI) GetAllEvents(ctx context.Context, username string, client *g
 	}
 
 	// 将userEventsMap转换为切片
-	userEventsSlice := make([]UserEvent, 0, len(userEventsMap))
+	userEventsSlice := make([]model.UserEvent, 0, len(userEventsMap))
 	for _, userEvent := range userEventsMap {
 		userEventsSlice = append(userEventsSlice, *userEvent) // 将指针解引用
 	}

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	_ "errors"
 	"fmt"
 	"github.com/GitEval/GitEval-Backend/model"
@@ -40,6 +41,8 @@ type GithubProxy interface {
 	GetFollowers(ctx context.Context, id int64) []model.User
 	CalculateScore(ctx context.Context, id int64, name string) float64
 	GetAllRepositories(ctx context.Context, loginName string, userId int64) []*github.Repository
+	GetClientFromMap(userID int64) (*github.Client, bool)
+	GetAllEvents(ctx context.Context, username string, client *github.Client) ([]model.UserEvent, error)
 }
 type LLMProxy interface {
 	GetArea(ctx context.Context, req llm.GetAreaRequest) (llm.GetAreaResponse, error)
@@ -146,8 +149,59 @@ func (s *UserService) GetUserById(ctx context.Context, id int64) (model.User, er
 	return s.user.GetUserByID(ctx, id)
 }
 
-func (s *UserService) SaveUser(ctx context.Context, user model.User) error {
-	return s.user.SaveUser(ctx, user)
+//	func (s *UserService) SaveUser(ctx context.Context, user model.User) error {
+//		return s.user.SaveUser(ctx, user)
+//	}
+//
+// 生成国籍
+func (s *UserService) generateNationality(ctx context.Context, bio, company, location string, followerLoc, followingloc []string) string {
+	res, err := s.l.GetArea(ctx, llm.GetAreaRequest{
+		Bio:            bio,
+		Company:        company,
+		Location:       location,
+		FollowerAreas:  followerLoc,
+		FollowingAreas: followingloc,
+	})
+	if err != nil {
+		log.Println(errors.New("failed to get Nationality"))
+		return ""
+	}
+	//添加置信度
+	nation := fmt.Sprintf("%s(trust:%f)", res.Area, res.Confidence)
+	return nation
+}
+func (s *UserService) generateDomain(ctx context.Context, LoginName, bio string, userId int64) []string {
+	repos := s.g.GetAllRepositories(ctx, LoginName, userId)
+	if len(repos) == 0 {
+		return nil
+	}
+	var r = make([]llm.Repo, len(repos))
+	for k, v := range repos {
+		r[k] = llm.Repo{
+			Name:         *v.Name,
+			MainLanguage: *v.Language,
+		}
+	}
+	resp, err := s.l.GetDomain(ctx, llm.GetDomainRequest{
+		Repos: r,
+		Bio:   bio,
+	})
+	if err != nil {
+		log.Println(errors.New("failed to get domain"))
+		return nil
+	}
+	return resp.Domain
+}
+
+func StringToDomains(lang []string, id int64) []model.Domain {
+	var (
+		domainsModel = make([]model.Domain, len(lang))
+	)
+	for k, v := range lang {
+		domainsModel[k].UserID = id
+		domainsModel[k].Domain = v
+	}
+	return domainsModel
 }
 
 // GetLeaderboard 获取排行榜
@@ -224,15 +278,18 @@ func (s *UserService) GetEvaluation(ctx context.Context, userId int64) (string, 
 			PullRequestCount: event.PullRequestCount,
 		})
 	}
-	evaluation, err := s.llm.GetEvaluation(ctx, llm.GetEvaluationRequest{
+	domains, err := s.domain.GetDomainById(ctx, user.ID)
+	if err != nil {
+		return "", err
+	}
+	evaluation, err := s.l.GetEvaluation(ctx, llm.GetEvaluationRequest{
 		Bio:               *user.Bio,
 		Followers:         len(followers),
 		Following:         len(following),
 		TotalPrivateRepos: user.TotalPrivateRepos,
 		TotalPublicRepos:  user.TotalPrivateRepos,
 		UserEvents:        userEvents,
-		Domains:           user.Domain,
-		CreatedAt:         fmt.Sprintf("%v", user.UserCreatedAt),
+		Domains:           domains,
 	})
 	if err != nil {
 		return "", err
