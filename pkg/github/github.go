@@ -84,7 +84,7 @@ func (g *GitHubAPI) GetFollowing(ctx context.Context, id int64) []model.User {
 	client := val.(*github.Client)
 	users, _, err := client.Users.ListFollowing(ctx, "", nil)
 	if err != nil {
-		log.Println("get github following user failed")
+		log.Println("get github following user failed:", err)
 		return nil
 	}
 	return model.TransformUsers(users)
@@ -143,7 +143,7 @@ func (g *GitHubAPI) GetRepoDetail(ctx context.Context, repoUrl string, client *g
 
 // GetAllRepositories 获取用户的所有仓库信息
 // 接受用户的昵称和userID,返回所有仓库信息
-func (g *GitHubAPI) GetAllRepositories(ctx context.Context, loginName string, userId int64) []*github.Repository {
+func (g *GitHubAPI) GetAllRepositories(ctx context.Context, loginName string, userId int64) []*model.Repo {
 	v, exist := g.clients.Load(userId)
 	if !exist {
 		log.Println("get github client failed")
@@ -155,7 +155,26 @@ func (g *GitHubAPI) GetAllRepositories(ctx context.Context, loginName string, us
 		log.Printf("Error getting repositories: %v\n", err)
 		return nil
 	}
-	return repos
+	var resp []*model.Repo
+	for i, repo := range repos {
+		//尝试获取每个仓库的Readme
+
+		me, err := g.GetReadMe(ctx, repo.GetURL(), client)
+		if err != nil {
+			log.Println("get github readme failed:", err)
+		}
+		resp = append(resp, &model.Repo{
+			Name:     repo.Name,
+			Readme:   &me,
+			Language: repo.Language,
+		})
+
+		//TODO 这里可能需要进行限流,设置一个最大数量,这里暂时设置的是20
+		if i+1 == 20 {
+			break
+		}
+	}
+	return resp
 }
 
 func (g *GitHubAPI) GetReadMe(ctx context.Context, repoUrl string, client *github.Client) (readme string, err error) {
@@ -166,7 +185,7 @@ func (g *GitHubAPI) GetReadMe(ctx context.Context, repoUrl string, client *githu
 	}
 	//获取readme
 	gitReadme, _, err := client.Repositories.GetReadme(ctx, owner, repo, nil)
-	if err != nil {
+	if err != nil || gitReadme == nil || gitReadme.Content == nil {
 		return "", err
 	}
 

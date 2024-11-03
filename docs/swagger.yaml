@@ -1,0 +1,214 @@
+definitions:
+  model.Leaderboard:
+    properties:
+      score:
+        type: number
+      user_id:
+        type: integer
+    type: object
+  model.User:
+    properties:
+      Bio:
+        description: 用户的个人简介
+        type: string
+      avatar_url:
+        description: 用户头像的 URL
+        type: string
+      blog:
+        description: 博客连接
+        type: string
+      collaborators:
+        description: 协作者的数量
+        type: integer
+      company:
+        description: 用户所属的公司
+        type: string
+      email:
+        description: 邮箱
+        type: string
+      evaluation:
+        description: 评估
+        type: string
+      followers:
+        description: 粉丝数
+        type: integer
+      following:
+        description: 关注数
+        type: integer
+      id:
+        type: integer
+      location:
+        description: 地区
+        type: string
+      login_name:
+        description: 用户的登录名
+        type: string
+      name:
+        description: 真实姓名
+        type: string
+      nationality:
+        description: 国籍
+        type: string
+      public_repos:
+        description: 用户公开的仓库的数量
+        type: integer
+      score:
+        description: 评分
+        type: number
+      total_private_repos:
+        description: 用户的私有仓库总数
+        type: integer
+    type: object
+  response.CallBack:
+    properties:
+      user_id:
+        type: integer
+    type: object
+  response.Err:
+    properties:
+      error: {}
+    type: object
+  response.Evaluation:
+    properties:
+      evaluation:
+        type: string
+    type: object
+  response.Ranking:
+    properties:
+      leaderboard:
+        items:
+          $ref: '#/definitions/model.Leaderboard'
+        type: array
+    type: object
+  response.Success:
+    properties:
+      data: {}
+      msg:
+        type: string
+    type: object
+  response.User:
+    properties:
+      domain:
+        items:
+          type: string
+        type: array
+      user:
+        $ref: '#/definitions/model.User'
+    type: object
+info:
+  contact: {}
+paths:
+  /api/v1/auth/login:
+    get:
+      description: github重定向,用来初始化这个用户
+      parameters:
+      - description: github重定向的code
+        in: query
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 初始化成功!
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Success'
+            - properties:
+                Data:
+                  $ref: '#/definitions/response.CallBack'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Err'
+        "500":
+          description: 内部错误
+          schema:
+            $ref: '#/definitions/response.Err'
+      summary: github重定向
+      tags:
+      - Auth
+  /api/v1/user/get/evaluation:
+    get:
+      parameters:
+      - description: 用户ID,暂时没写jwt和cookie之类的,所以直接传user_id
+        in: query
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登录成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Success'
+            - properties:
+                Data:
+                  $ref: '#/definitions/response.Evaluation'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Err'
+      summary: 根据userid获取用户评价
+      tags:
+      - User
+  /api/v1/user/get/info:
+    get:
+      parameters:
+      - description: 用户ID,暂时没写jwt和cookie之类的,所以直接传user_id
+        in: query
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登录成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Success'
+            - properties:
+                Data:
+                  $ref: '#/definitions/response.User'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Err'
+      summary: 从userid获取用户
+      tags:
+      - User
+  /api/v1/user/get/rank:
+    get:
+      parameters:
+      - description: 用户ID,暂时没写jwt和cookie之类的,所以直接传user_id
+        in: query
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登录成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Success'
+            - properties:
+                Data:
+                  $ref: '#/definitions/response.Ranking'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Err'
+      summary: 根据userid获取用户的score的排行榜
+      tags:
+      - User
+swagger: "2.0"

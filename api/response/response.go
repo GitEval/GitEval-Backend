@@ -17,3 +17,11 @@ type User struct {
 	U      model.User `json:"user"`
 	Domain []string   `json:"domain"`
 }
+
+type Ranking struct {
+	Leaderboard []model.Leaderboard `json:"leaderboard"`
+}
+
+type Evaluation struct {
+	Evaluation string `json:"evaluation"`
+}

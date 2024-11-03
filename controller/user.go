@@ -29,7 +29,7 @@ func NewUserController(userService UserServiceProxy) *UserController {
 // @Tags User
 // @Param user_id query string true "用户ID,暂时没写jwt和cookie之类的,所以直接传user_id"
 // @Produce json
-// @Success 200 {object} response.Success "登录成功"
+// @Success 200 {object} response.Success{Data=response.User} "登录成功"
 // @Failure 400 {object} response.Err "请求参数错误"
 // @Router /api/v1/user/get/info [get]
 func (c *UserController) GetUser(ctx *gin.Context) {
@@ -64,7 +64,7 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 // @Tags User
 // @Param user_id query string true "用户ID,暂时没写jwt和cookie之类的,所以直接传user_id"
 // @Produce json
-// @Success 200 {object} response.Success "登录成功"
+// @Success 200 {object} response.Success{Data=response.Ranking} "登录成功"
 // @Failure 400 {object} response.Err "请求参数错误"
 // @Router /api/v1/user/get/rank [get]
 func (c *UserController) GetRanking(ctx *gin.Context) {
@@ -83,7 +83,7 @@ func (c *UserController) GetRanking(ctx *gin.Context) {
 		})
 		return
 	}
-	ctx.JSON(http.StatusOK, response.Success{Data: rankings, Msg: "success"})
+	ctx.JSON(http.StatusOK, response.Success{Data: response.Ranking{Leaderboard: rankings}, Msg: "success"})
 }
 
 // GetEvaluation 获取用户评价
@@ -91,7 +91,7 @@ func (c *UserController) GetRanking(ctx *gin.Context) {
 // @Tags User
 // @Param user_id query string true "用户ID,暂时没写jwt和cookie之类的,所以直接传user_id"
 // @Produce json
-// @Success 200 {object} response.Success "登录成功"
+// @Success 200 {object} response.Success{Data=response.Evaluation} "登录成功"
 // @Failure 400 {object} response.Err "请求参数错误"
 // @Router /api/v1/user/get/evaluation [get]
 func (c *UserController) GetEvaluation(ctx *gin.Context) {
@@ -111,5 +111,5 @@ func (c *UserController) GetEvaluation(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, response.Success{Data: evaluation, Msg: "success"})
+	ctx.JSON(http.StatusOK, response.Success{Data: response.Evaluation{Evaluation: evaluation}, Msg: "success"})
 }

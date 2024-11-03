@@ -40,7 +40,7 @@ type GithubProxy interface {
 	GetFollowing(ctx context.Context, id int64) []model.User
 	GetFollowers(ctx context.Context, id int64) []model.User
 	CalculateScore(ctx context.Context, id int64, name string) float64
-	GetAllRepositories(ctx context.Context, loginName string, userId int64) []*github.Repository
+	GetAllRepositories(ctx context.Context, loginName string, userId int64) []*model.Repo
 	GetClientFromMap(userID int64) (*github.Client, bool)
 	GetAllEvents(ctx context.Context, username string, client *github.Client) ([]model.UserEvent, error)
 }
@@ -125,22 +125,26 @@ func (s *UserService) InitUser(ctx context.Context, u model.User) (err error) {
 		return err
 	}
 
-	//此处进行异步处理
-	go func() {
-		ctx1 := context.Background()
-		//得到用户的国籍,尝试存储这个用户的国籍
-		Nation := s.generateNationality(ctx1, *u.Bio, *u.Company, *u.Location, followersLoc, followingLoc)
-		u.Nationality = Nation
-		err := s.user.SaveUser(ctx1, u)
-		if err != nil {
-			return
-		}
-	}()
+	////此处进行异步处理
+	//go func() {
+	//	ctx1 := context.Background()
+	//	//得到用户的国籍,尝试存储这个用户的国籍
+	//	Nation := s.generateNationality(ctx1, *u.Bio, *u.Company, *u.Location, followersLoc, followingLoc)
+	//	u.Nationality = Nation
+	//	err := s.user.SaveUser(ctx1, u)
+	//	if err != nil {
+	//		return
+	//	}
+	//}()
 
 	go func() {
 		ctx2 := context.Background()
+		var bio string
+		if u.Bio != nil {
+			bio = *u.Bio
+		}
 		//获取这个用户的主要技术领域
-		userDomain := s.generateDomain(ctx2, u.LoginName, *u.Bio, u.ID)
+		userDomain := s.generateDomain(ctx2, u.LoginName, bio, u.ID)
 		//将获取的结果转化成对应的model
 		domains := StringToDomains(userDomain, u.ID)
 		//存储domain
@@ -202,8 +206,9 @@ func (s *UserService) generateDomain(ctx context.Context, LoginName, bio string,
 	var r = make([]llm.Repo, len(repos))
 	for k, v := range repos {
 		r[k] = llm.Repo{
-			Name:         *v.Name,
-			MainLanguage: *v.Language,
+			Name:         v.Name,
+			MainLanguage: v.Language,
+			Readme:       v.Readme,
 		}
 	}
 	resp, err := s.l.GetDomain(ctx, llm.GetDomainRequest{

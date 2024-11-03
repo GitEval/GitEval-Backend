@@ -103,8 +103,9 @@ func (c *LLMClient) sendPostRequest(ctx context.Context, url string, req interfa
 
 // Repo 结构体与 Python 的 Repo 对应
 type Repo struct {
-	Name         string `json:"name"`     // 仓库名称
-	MainLanguage string `json:"language"` // 主要的编程语言
+	Name         *string `json:"name"`     // 仓库名称
+	MainLanguage *string `json:"language"` // 主要的编程语言
+	Readme       *string `json:"readme"`   //这个仓库的readme
 }
 
 // DomainRequest 结构体与 Python 的 DomainRequest 对应
