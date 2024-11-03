@@ -19,18 +19,6 @@ const (
 	ExpireTime = time.Hour * 24 * 7
 )
 
-//cc:
-//接口的声明一般由调用方来决定,比如你的authService只是用到了几个方法,就没必要直接将该接口给它
-//这里我懒得改了，哈哈哈
-
-type GitHubAPI interface {
-	GetLoginUrl() string
-	SetClient(userID int64, client *github.Client)
-	GetClientFromMap(userID int64) (*github.Client, bool)
-	GetClientByCode(code string) (*github.Client, error)
-	GetUserInfo(ctx context.Context, client *github.Client, username string) (*github.User, error)
-}
-
 // gitHubAPI 结构体
 // 将其当作处理所有有关github账号的中枢,因为它有map
 type gitHubAPI struct {
@@ -38,7 +26,7 @@ type gitHubAPI struct {
 	cfg     *conf.GitHubConfig  // 引用的地址完全相同节约了内存空间
 }
 
-func NewGitHubAPI(c *conf.GitHubConfig, clients expireMap.ExpireMap) GitHubAPI {
+func NewGitHubAPI(c *conf.GitHubConfig, clients expireMap.ExpireMap) *gitHubAPI {
 	return &gitHubAPI{
 		cfg:     c,
 		clients: clients,
@@ -153,27 +141,6 @@ func (g *gitHubAPI) GetRepoDetail(ctx context.Context, repoUrl string, client *g
 	return repository, nil
 }
 
-// GetUserCommitCount 获取某个用户在指定仓库中的提交次数
-func (g *gitHubAPI) GetUserCommitCount(ctx context.Context, client *github.Client, owner, repo, username string) (int, error) {
-	opt := &github.CommitsListOptions{
-		Author:      username,                         // 设置提交者用户名
-		ListOptions: github.ListOptions{PerPage: 100}, // 分页大小
-	}
-	totalCommits := 0
-
-	for {
-		commits, resp, err := client.Repositories.ListCommits(ctx, owner, repo, opt)
-		if err != nil {
-			return 0, err
-		}
-
-		totalCommits += len(commits) // 累加提交数量
-
-		// 检查是否有下一页
-		if resp.NextPage == 0 {
-			break
-		}
-		opt.Page = resp.NextPage // 设置下一页
 // GetAllRepositories 获取用户的所有仓库信息
 // 接受用户的昵称和userID,返回所有仓库信息
 func (g *gitHubAPI) GetAllRepositories(ctx context.Context, loginName string, userId int64) []*github.Repository {

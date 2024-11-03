@@ -9,12 +9,6 @@ import (
 	"net/http"
 )
 
-//// LLMClient 接口定义
-//type LLMClient interface {
-//	GetDomain(ctx context.Context, req GetDomainRequest) (GetDomainResponse, error)
-//	GetEvaluation(ctx context.Context, req GetEvaluationRequest) (GetEvaluationResponse, error)
-//}
-
 // lLMClient 结构体
 type lLMClient struct {
 	cfg *conf.LLMConfig
