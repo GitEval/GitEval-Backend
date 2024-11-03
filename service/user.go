@@ -80,10 +80,12 @@ func (s *UserService) InitUser(ctx context.Context, u model.User) (err error) {
 	users = append(users, following...)
 	followers := s.g.GetFollowers(ctx, u.ID)
 	users = append(users, followers...)
+
 	var (
 		followersLoc = make([]string, len(followers))
 		followingLoc = make([]string, len(following))
 	)
+
 	// 获取followers和following的Loction
 	// 顺便计算他们的分数
 	for _, v := range followers {
@@ -92,24 +94,19 @@ func (s *UserService) InitUser(ctx context.Context, u model.User) (err error) {
 		}
 		v.Score = s.g.CalculateScore(ctx, u.ID, v.LoginName)
 	}
+
 	for _, v := range following {
 		if v.Location != nil {
 			followingLoc = append(followingLoc, *v.Location)
 		}
 		v.Score = s.g.CalculateScore(ctx, u.ID, v.LoginName)
 	}
-
-	//得到用户的国籍
-	Nation := s.generateNationality(ctx, *u.Bio, *u.Company, *u.Location, followersLoc, followingLoc)
-	u.Nationality = &Nation
-	//获取各个仓库的主要语言
-	lang := s.generateDomain(ctx, u.LoginName, *u.Bio, u.ID)
-	//将语言转化为domains
-	domains := StringToDomains(lang, u.ID)
 	users = append(users, u)
+
 	//得到关系
 	followingContact := getContact(u.ID, following, Following)
 	followersContact := getContact(u.ID, followers, Followers)
+
 	//开启事务
 	err = s.tx.InTx(ctx, func(ctx context.Context) error {
 		if err := s.user.CreateUsers(ctx, users); err != nil {
@@ -121,15 +118,37 @@ func (s *UserService) InitUser(ctx context.Context, u model.User) (err error) {
 		if err := s.contact.CreateContacts(ctx, followersContact); err != nil {
 			return err
 		}
-		if err := s.domain.Create(ctx, domains); err != nil {
-			return err
-		}
 		return nil
 	})
 	if err != nil {
 		log.Println("Init user failed")
 		return err
 	}
+
+	//此处进行异步处理
+	go func() {
+		ctx1 := context.Background()
+		//得到用户的国籍,尝试存储这个用户的国籍
+		Nation := s.generateNationality(ctx1, *u.Bio, *u.Company, *u.Location, followersLoc, followingLoc)
+		u.Nationality = Nation
+		err := s.user.SaveUser(ctx1, u)
+		if err != nil {
+			return
+		}
+	}()
+
+	go func() {
+		ctx2 := context.Background()
+		//获取这个用户的主要技术领域
+		userDomain := s.generateDomain(ctx2, u.LoginName, *u.Bio, u.ID)
+		//将获取的结果转化成对应的model
+		domains := StringToDomains(userDomain, u.ID)
+		//存储domain
+		if err := s.domain.Create(ctx2, domains); err != nil {
+			return
+		}
+	}()
+
 	return nil
 
 }
@@ -149,10 +168,14 @@ func (s *UserService) GetUserById(ctx context.Context, id int64) (model.User, er
 	return s.user.GetUserByID(ctx, id)
 }
 
-//	func (s *UserService) SaveUser(ctx context.Context, user model.User) error {
-//		return s.user.SaveUser(ctx, user)
-//	}
-//
+func (s *UserService) CreateUser(ctx context.Context, u model.User) error {
+	err := s.user.SaveUser(ctx, u)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // 生成国籍
 func (s *UserService) generateNationality(ctx context.Context, bio, company, location string, followerLoc, followingloc []string) string {
 	res, err := s.l.GetArea(ctx, llm.GetAreaRequest{
@@ -170,6 +193,7 @@ func (s *UserService) generateNationality(ctx context.Context, bio, company, loc
 	nation := fmt.Sprintf("%s(trust:%f)", res.Area, res.Confidence)
 	return nation
 }
+
 func (s *UserService) generateDomain(ctx context.Context, LoginName, bio string, userId int64) []string {
 	repos := s.g.GetAllRepositories(ctx, LoginName, userId)
 	if len(repos) == 0 {
@@ -278,10 +302,12 @@ func (s *UserService) GetEvaluation(ctx context.Context, userId int64) (string, 
 			PullRequestCount: event.PullRequestCount,
 		})
 	}
+
 	domains, err := s.domain.GetDomainById(ctx, user.ID)
 	if err != nil {
 		return "", err
 	}
+
 	evaluation, err := s.l.GetEvaluation(ctx, llm.GetEvaluationRequest{
 		Bio:               *user.Bio,
 		Followers:         len(followers),

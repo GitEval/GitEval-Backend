@@ -28,7 +28,7 @@ type LLMClient interface {
 type UserServiceProxy interface {
 	InitUser(ctx context.Context, u model.User) (err error)
 	GetUserById(ctx context.Context, id int64) (model.User, error)
-	//SaveUser(ctx context.Context, user model.User) error
+	CreateUser(ctx context.Context, u model.User) error
 }
 
 type authService struct {
@@ -81,183 +81,22 @@ func (s *authService) CallBack(ctx context.Context, code string) (userId int64, 
 			TotalPrivateRepos: userInfo.GetTotalPrivateRepos(),
 			Collaborators:     userInfo.GetCollaborators(),
 		}
-		// 创建用户
-		// Notice: InitUser不仅完成user的存储
-		//还完成国籍的确定,分数的评测，以及领域的确定
-		err = s.u.InitUser(ctx, user)
+		//首次创建用户
+		err = s.u.CreateUser(ctx, user)
 		if err != nil {
 			return 0, err
 		}
+		//这里做异步主要是为了保证用户体验,否则等待时间过长了
+		go func() {
+			// 初始化用户关系网
+			err = s.u.InitUser(context.Background(), user)
+			if err != nil {
+				return
+			}
+		}()
 		//存储用户
 		s.githubAPI.SetClient(user.ID, client)
 	}
 
 	return user.ID, nil
-	//switch err {
-	//case gorm.ErrRecordNotFound:
-	//	user = model.TransformUser(userInfo)
-	//	// 创建用户
-	//	err = s.u.InitUser(ctx, user)
-	//	if err != nil {
-	//		return 0, err
-	//	}
-	//
-	//	//存储用户
-	//	s.githubAPI.SetClient(user.ID, client)
-	//	go func() {
-	//		ctx = context.Background()
-	//
-	//		var followerAreas []string
-	//		followers := s.githubAPI.GetFollowers(ctx, user.ID)
-	//		for _, follower := range followers {
-	//			followerAreas = append(followerAreas, *follower.Location)
-	//		}
-	//
-	//		var followingAreas []string
-	//		followings := s.githubAPI.GetFollowers(ctx, user.ID)
-	//		for _, following := range followings {
-	//			followingAreas = append(followingAreas, *following.Location)
-	//		}
-	//
-	//		area, err := s.llmClient.GetArea(ctx, llm.GetAreaRequest{
-	//			Bio:            *user.Bio,
-	//			Company:        *user.Company,
-	//			Location:       *user.Location,
-	//			FollowerAreas:  followerAreas,
-	//			FollowingAreas: followingAreas,
-	//		})
-	//		if err != nil {
-	//			return
-	//		}
-	//
-	//		if area.Confidence >= 0.5 {
-	//			user.Nationality = &area.Area
-	//		} else {
-	//			*user.Nationality = "N/A"
-	//		}
-	//
-	//		//先尝试保存一次
-	//		err = s.u.SaveUser(ctx, user)
-	//		if err != nil {
-	//			return
-	//		}
-	//
-	//		//获取仓库
-	//		details, err := s.githubAPI.GetAllRepos(ctx, userInfo, client)
-	//		if err != nil {
-	//			return
-	//		}
-	//		var repos []llm.Repo
-	//		for _, detail := range details {
-	//			repos = append(repos, llm.Repo{
-	//				Name:     detail.Name,
-	//				Readme:   detail.Readme,
-	//				Language: detail.Language,
-	//				Commit:   detail.Commit,
-	//				Star:     detail.Star,
-	//				Fork:     detail.Fork,
-	//			})
-	//		}
-	//
-	//		domain, err := s.llmClient.GetDomain(ctx, llm.GetDomainRequest{
-	//			Repos: repos,
-	//			Bio:   *user.Bio,
-	//		})
-	//		if err != nil {
-	//			return
-	//		}
-	//
-	//		user.Domain = domain.Domain
-	//		//尝试保存一次
-	//		err = s.u.SaveUser(ctx, user)
-	//		if err != nil {
-	//			return
-	//		}
-	//
-	//	}()
-	//case nil:
-	//	//尝试获取用户的技术领域
-	//	if user.Nationality == nil {
-	//		go func() {
-	//			ctx = context.Background()
-	//
-	//			var followerAreas []string
-	//			followers := s.githubAPI.GetFollowers(ctx, user.ID)
-	//			for _, follower := range followers {
-	//				followerAreas = append(followerAreas, *follower.Location)
-	//			}
-	//
-	//			var followingAreas []string
-	//			followings := s.githubAPI.GetFollowers(ctx, user.ID)
-	//			for _, following := range followings {
-	//				followingAreas = append(followingAreas, *following.Location)
-	//			}
-	//
-	//			area, err := s.llmClient.GetArea(ctx, llm.GetAreaRequest{
-	//				Bio:            *user.Bio,
-	//				Company:        *user.Company,
-	//				Location:       *user.Location,
-	//				FollowerAreas:  followerAreas,
-	//				FollowingAreas: followingAreas,
-	//			})
-	//			if err != nil {
-	//				return
-	//			}
-	//
-	//			if area.Confidence >= 0.5 {
-	//				user.Nationality = &area.Area
-	//			} else {
-	//				*user.Nationality = "N/A"
-	//			}
-	//
-	//			//先尝试保存一次
-	//			err = s.u.SaveUser(ctx, user)
-	//			if err != nil {
-	//				return
-	//			}
-	//		}()
-	//	}
-	//	//尝试获取用户的技术领域
-	//	if user.Domain == nil {
-	//		go func() {
-	//			ctx = context.Background()
-	//			//获取仓库
-	//			details, err := s.githubAPI.GetAllRepos(ctx, userInfo, client)
-	//			if err != nil {
-	//				return
-	//			}
-	//			var repos []llm.Repo
-	//			for _, detail := range details {
-	//				repos = append(repos, llm.Repo{
-	//					Name:     detail.Name,
-	//					Readme:   detail.Readme,
-	//					Language: detail.Language,
-	//					Commit:   detail.Commit,
-	//					Star:     detail.Star,
-	//					Fork:     detail.Fork,
-	//				})
-	//			}
-	//
-	//			domain, err := s.llmClient.GetDomain(ctx, llm.GetDomainRequest{
-	//				Repos: repos,
-	//				Bio:   *user.Bio,
-	//			})
-	//			if err != nil {
-	//				return
-	//			}
-	//
-	//			user.Domain = domain.Domain
-	//			//尝试保存一次
-	//			err = s.u.SaveUser(ctx, user)
-	//			if err != nil {
-	//				return
-	//			}
-	//		}()
-	//	}
-	//
-	//default:
-	//	return 0, err
-	//
-	//}
-
 }

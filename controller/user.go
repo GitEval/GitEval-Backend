@@ -30,7 +30,7 @@ func NewUserController(userService UserServiceProxy) UserController {
 // GetUser 获取用户
 // @Summary 从userid获取用户
 // @Tags User
-// @Accept json request.GetUserInfo
+// @Param user_id query string true "用户ID,暂时没写jwt和cookie之类的,所以直接传user_id"
 // @Produce json
 // @Success 200 {object} response.Success "登录成功"
 // @Failure 400 {object} response.Err "请求参数错误"
@@ -43,6 +43,7 @@ func (c *userController) GetUser(ctx *gin.Context) {
 		})
 		return
 	}
+
 	user, err := c.userService.GetUserById(ctx, req.UserID)
 	if err != nil {
 		ctx.JSON(http.StatusOK, response.Err{
@@ -50,6 +51,7 @@ func (c *userController) GetUser(ctx *gin.Context) {
 		})
 		return
 	}
+
 	domain := c.userService.GetDomains(ctx, req.UserID)
 	ctx.JSON(http.StatusOK, response.Success{
 		Data: response.User{
@@ -63,7 +65,7 @@ func (c *userController) GetUser(ctx *gin.Context) {
 // GetRanking 获取排行
 // @Summary 根据userid获取用户的score的排行榜
 // @Tags User
-// @Accept json request.GetRanking
+// @Param user_id query string true "用户ID,暂时没写jwt和cookie之类的,所以直接传user_id"
 // @Produce json
 // @Success 200 {object} response.Success "登录成功"
 // @Failure 400 {object} response.Err "请求参数错误"
@@ -76,6 +78,7 @@ func (c *userController) GetRanking(ctx *gin.Context) {
 		})
 		return
 	}
+
 	rankings, err := c.userService.GetLeaderboard(ctx, req.UserID)
 	if err != nil {
 		ctx.JSON(http.StatusOK, response.Err{
@@ -89,7 +92,7 @@ func (c *userController) GetRanking(ctx *gin.Context) {
 // GetEvaluation 获取用户评价
 // @Summary 根据userid获取用户评价
 // @Tags User
-// @Accept json request.GetEvaluation
+// @Param user_id query string true "用户ID,暂时没写jwt和cookie之类的,所以直接传user_id"
 // @Produce json
 // @Success 200 {object} response.Success "登录成功"
 // @Failure 400 {object} response.Err "请求参数错误"
@@ -106,7 +109,7 @@ func (c *userController) GetEvaluation(ctx *gin.Context) {
 	evaluation, err := c.userService.GetEvaluation(ctx, req.UserID)
 	if err != nil {
 		ctx.JSON(http.StatusOK, response.Err{
-			Err: fmt.Errorf("GetLeaderboard: %w", err),
+			Err: fmt.Errorf("GetEvaluation: %w", err),
 		})
 		return
 	}

@@ -18,13 +18,28 @@ func NewGormUserDAO(data *Data) *GormUserDAO {
 	}
 }
 
+// CreateUsers 这里更新的数据不包括国籍和评价
 func (o *GormUserDAO) CreateUsers(ctx context.Context, users []User) error {
 	db := o.data.DB(ctx).Table(UserTable)
-	err := db.Clauses(clause.OnConflict{UpdateAll: true}).Create(&users).Error
+
+	// 定义要更新的字段（除 Nationality 和 Evaluation 外的所有字段）,有点弱智但是刚刚好
+	updateFields := []string{
+		"LoginName", "Name", "Location", "Email", "Following", "Followers",
+		"Blog", "Bio", "PublicRepos", "TotalPrivateRepos", "Company",
+		"AvatarURL", "Collaborators", "Score",
+	}
+
+	// 设置冲突时更新指定字段
+	err := db.Clauses(clause.OnConflict{
+		DoUpdates: clause.AssignmentColumns(updateFields),
+	}).Create(&users).Error
+
+	// 错误处理
 	if err != nil {
-		log.Println("Error creating user")
+		log.Println("Error creating users with selective update")
 		return err
 	}
+
 	return nil
 }
 

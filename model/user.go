@@ -27,7 +27,7 @@ type User struct {
 	Company           *string `gorm:"column:company" json:"company"`                         //用户所属的公司
 	AvatarURL         string  `gorm:"column:avatar_url" json:"avatar_url"`                   //用户头像的 URL
 	Collaborators     int     `gorm:"column:collaborators" json:"collaborators"`             //协作者的数量
-	Nationality       *string `gorm:"column:nationality" json:"nationality"`                 //国籍
+	Nationality       string  `gorm:"column:nationality" json:"nationality"`                 //国籍
 	Score             float64 `gorm:"column:score;index" json:"score"`                       //评分
 	Evaluation        string  `gorm:"column:evaluation" json:"evaluation"`                   //评估
 }

@@ -24,12 +24,11 @@ func NewAuthController(authService service.AuthService) AuthController {
 // @Summary 用户登录接口
 // @Description 用户登录接口
 // @Tags Auth
-// @Accept json
 // @Produce json
 // @Success 200 {object} response.Success "登录成功"
 // @Failure 400 {object} response.Err "请求参数错误"
 // @Failure 500 {object} response.Err "内部错误"
-// @Router /api/v1/auth/login [post]
+// @Router /api/v1/auth/login [get]
 func (c *authController) Login(ctx *gin.Context) error {
 	url, err := c.authService.Login(ctx)
 	if err != nil {
@@ -40,11 +39,21 @@ func (c *authController) Login(ctx *gin.Context) error {
 
 	// 重定向到 URL
 	ctx.Redirect(http.StatusFound, url) // HTTP 302
-	return nil                          // 重定向后通常不需要返回
+	return nil
 }
 
 // CallBack 用户在github授权登录之后会被重定向到这里。进行一个请求的发送进行最终验证登录
+// CallBack github重定向
+// @Summary github重定向
+// @Description github重定向,用来初始化这个用户
+// @Tags Auth
+// @Produce json
+// @Success 200 {object} response.Success "初始化成功!"
+// @Failure 400 {object} response.Err "请求参数错误"
+// @Failure 500 {object} response.Err "内部错误"
+// @Router /api/v1/auth/login [get]
 func (c *authController) CallBack(ctx *gin.Context) error {
+
 	// 绑定查询参数
 	var req request.CallBackReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
@@ -57,8 +66,6 @@ func (c *authController) CallBack(ctx *gin.Context) error {
 		return err
 	}
 
-	//把userid存到jwt中去,这里暂时还没写,凑合着先返回
-	//需要返回一个jwt
 	ctx.JSON(http.StatusOK, response.Success{
 		Data: response.CallBack{
 			UserId: userid,
@@ -69,7 +76,7 @@ func (c *authController) CallBack(ctx *gin.Context) error {
 }
 
 func (c *authController) Logout(ctx *gin.Context) error {
-
+	//待完成...我觉得能改成jwt就很好了....
 	//删除用户的当前jwt并将对应当前jwt列入黑名单
 	return nil
 }
