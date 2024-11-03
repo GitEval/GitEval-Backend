@@ -11,7 +11,6 @@ import (
 	"github.com/google/go-github/v50/github"
 	"golang.org/x/oauth2"
 	"log"
-	"strings"
 	"time"
 )
 
@@ -30,8 +29,11 @@ type GitHubAPI interface {
 	GetClientByCode(code string) (*github.Client, error)
 	GetUserInfo(ctx context.Context, client *github.Client, username string) (*github.User, error)
 	GetAllEvents(ctx context.Context, username string, client *github.Client) ([]UserEvent, error)
-	GetRepoDetail(ctx context.Context, repoUrl string, client *github.Client) (*github.Repository, error)
-	GetReadMe(ctx context.Context, repoUrl string, client *github.Client) (readme string, err error)
+	GetFollowing(ctx context.Context, id int64) []model.User
+	GetFollowers(ctx context.Context, id int64) []model.User
+	CalculateScore(ctx context.Context, id int64, name string) float64
+	GetAllRepos(ctx context.Context, user *github.User, client *github.Client) ([]Repo, error)
+	GetOrganizations(ctx context.Context, userID int64) ([]*github.Organization, error)
 }
 
 // gitHubAPI 结构体
@@ -138,30 +140,59 @@ func (g *gitHubAPI) CalculateScore(ctx context.Context, id int64, name string) f
 	return score
 }
 
-// GetReposDetailList 根据仓库链接获取仓库的详细信息列表
-func (g *gitHubAPI) GetRepoDetail(ctx context.Context, repoUrl string, client *github.Client) (*github.Repository, error) {
-
-	// 提取用户名和仓库名
-	owner, repo, err := g.parseRepoURL(repoUrl)
+func (g *gitHubAPI) GetAllRepos(ctx context.Context, user *github.User, client *github.Client) ([]Repo, error) {
+	// 发起请求，获取仓库列表
+	repos, _, err := client.Repositories.List(ctx, user.GetLogin(), nil)
 	if err != nil {
-		return &github.Repository{}, fmt.Errorf("invalid repository URL %s: %v", repoUrl, err)
+		return nil, err
+	}
+	var resp []Repo
+	for _, repo := range repos {
+		me, err := g.GetReadMe(ctx, repo.GetOwner().GetName(), repo.GetName(), client)
+		if err != nil {
+			return nil, err
+		}
+		commitCount, err := g.GetUserCommitCount(ctx, client, repo.GetOwner().GetName(), repo.GetName(), user.GetLogin())
+		resp = append(resp, Repo{
+			Name:     repo.GetName(),
+			Readme:   me,
+			Language: repo.GetLanguage(),
+			Commit:   commitCount,
+			Star:     repo.GetStargazersCount(),
+			Fork:     repo.GetForksCount(),
+		})
 	}
 
-	// 获取仓库的详细信息
-	repository, _, err := client.Repositories.Get(ctx, owner, repo)
-	if err != nil {
-		return &github.Repository{}, fmt.Errorf("failed to get repository details for %s: %v", repoUrl, err)
-	}
-
-	return repository, nil
+	return resp, nil
 }
 
-func (g *gitHubAPI) GetReadMe(ctx context.Context, repoUrl string, client *github.Client) (readme string, err error) {
-	// 提取用户名和仓库名
-	owner, repo, err := g.parseRepoURL(repoUrl)
-	if err != nil {
-		return "", fmt.Errorf("invalid repository URL %s: %v", repoUrl, err)
+// GetUserCommitCount 获取某个用户在指定仓库中的提交次数
+func (g *gitHubAPI) GetUserCommitCount(ctx context.Context, client *github.Client, owner, repo, username string) (int, error) {
+	opt := &github.CommitsListOptions{
+		Author:      username,                         // 设置提交者用户名
+		ListOptions: github.ListOptions{PerPage: 100}, // 分页大小
 	}
+	totalCommits := 0
+
+	for {
+		commits, resp, err := client.Repositories.ListCommits(ctx, owner, repo, opt)
+		if err != nil {
+			return 0, err
+		}
+
+		totalCommits += len(commits) // 累加提交数量
+
+		// 检查是否有下一页
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.Page = resp.NextPage // 设置下一页
+	}
+	return totalCommits, nil
+}
+
+func (g *gitHubAPI) GetReadMe(ctx context.Context, owner string, repo string, client *github.Client) (readme string, err error) {
+
 	//获取readme
 	gitReadme, _, err := client.Repositories.GetReadme(ctx, owner, repo, nil)
 	if err != nil {
@@ -175,6 +206,24 @@ func (g *gitHubAPI) GetReadMe(ctx context.Context, repoUrl string, client *githu
 	}
 
 	return string(content), nil
+}
+
+func (g *gitHubAPI) GetOrganizations(ctx context.Context, userID int64) ([]*github.Organization, error) {
+	val, exist := g.clients.Load(userID)
+	if !exist {
+		log.Println("get github client failed")
+		return nil, fmt.Errorf("github client not found for user ID %d", userID)
+	}
+	client := val.(*github.Client)
+
+	// 获取组织列表
+	orgs, _, err := client.Organizations.List(ctx, "", nil)
+	if err != nil {
+		log.Println("Error getting organizations:", err)
+		return nil, err
+	}
+
+	return orgs, nil
 }
 
 func (g *gitHubAPI) GetAllEvents(ctx context.Context, username string, client *github.Client) ([]UserEvent, error) {
@@ -195,6 +244,9 @@ func (g *gitHubAPI) GetAllEvents(ctx context.Context, username string, client *g
 
 		// 如果没有更多页面，则退出循环
 		if resp.NextPage == 0 {
+			break
+		} else if len(allEvents) > 2000 {
+			//如果事件过多的话就做限流,这个地方还得再明确下
 			break
 		}
 
@@ -274,16 +326,6 @@ func (g *gitHubAPI) GetAllEvents(ctx context.Context, username string, client *g
 	}
 
 	return userEventsSlice, nil
-}
-
-// parseRepoURL 从仓库链接中解析出用户名和仓库名
-func (g *gitHubAPI) parseRepoURL(url string) (owner, repo string, err error) {
-	// 示例仓库链接: https://github.com/owner/repo
-	parts := strings.Split(strings.TrimPrefix(url, "https://github.com/"), "/")
-	if len(parts) < 2 {
-		return "", "", fmt.Errorf("invalid GitHub repository URL")
-	}
-	return parts[0], parts[1], nil
 }
 
 // 具体的计算逻辑

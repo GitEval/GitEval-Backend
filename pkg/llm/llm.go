@@ -110,21 +110,18 @@ func (c *lLMClient) sendPostRequest(ctx context.Context, url string, req interfa
 
 // Repo 结构体与 Python 的 Repo 对应
 type Repo struct {
-	Name     string             `json:"name"`     // 仓库名称
-	Readme   string             `json:"readme"`   // README 内容
-	Language map[string]float64 `json:"language"` // 编程语言及其使用比例
-	Commit   int                `json:"commit"`   // 用户的 commit 次数
-	Add      int                `json:"add"`      // 增加的 commit 数量
-	Delete   int                `json:"delete"`   // 减少的 commit 数量
-	Star     int                `json:"star"`     // 被 star 的数量
-	Fork     int                `json:"fork"`     // 被 fork 的数量
+	Name     string `json:"name"`     // 仓库名称
+	Readme   string `json:"readme"`   // README 内容
+	Language string `json:"language"` // 编程语言及其使用比例
+	Commit   int    `json:"commit"`   // 用户的 commit 次数
+	Star     int    `json:"star"`     // 被 star 的数量
+	Fork     int    `json:"fork"`     // 被 fork 的数量
 }
 
 // DomainRequest 结构体与 Python 的 DomainRequest 对应
 type GetDomainRequest struct {
-	Repos         []Repo   `json:"repos"`         // 仓库列表
-	Bio           string   `json:"bio"`           // 个人简介
-	Organizations []string `json:"organizations"` // 所属组织
+	Repos []Repo `json:"repos"` // 仓库列表
+	Bio   string `json:"bio"`   // 个人简介
 }
 
 // DomainResponse 结构体与 Python 的 DomainResponse 对应

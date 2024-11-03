@@ -17,14 +17,17 @@ const (
 type UserDAOProxy interface {
 	CreateUsers(ctx context.Context, user []model.User) error
 	GetUserByID(ctx context.Context, id int64) (model.User, error)
+	SaveUser(ctx context.Context, user model.User) error
 	GetFollowingUsersJoinContact(ctx context.Context, id int64) ([]model.User, error)
 	GetFollowersUsersJoinContact(ctx context.Context, id int64) ([]model.User, error)
 }
+
 type ContactDAOProxy interface {
 	GetCountOfFollowing(ctx context.Context, id int64) (int64, error)
 	GetCountOfFollowers(ctx context.Context, id int64) (int64, error)
 	CreateContacts(ctx context.Context, contacts []model.FollowingContact) error
 }
+
 type GithubProxy interface {
 	GetFollowing(ctx context.Context, id int64) []model.User
 	GetFollowers(ctx context.Context, id int64) []model.User
@@ -89,6 +92,10 @@ func (s *UserService) GetUserById(ctx context.Context, id int64) (model.User, er
 	return s.user.GetUserByID(ctx, id)
 }
 
+func (s *UserService) SaveUser(ctx context.Context, user model.User) error {
+	return s.user.SaveUser(ctx, user)
+}
+
 // GetLeaderboard 获取排行榜
 func (s *UserService) GetLeaderboard(ctx context.Context, userId int64) ([]model.Leaderboard, error) {
 	var (
@@ -146,6 +153,7 @@ func getContact(Id int64, users []model.User, follow int) []model.FollowingConta
 	}
 	return contact
 }
+
 func getLeaderboard(users []model.User) []model.Leaderboard {
 	var (
 		leaderboard = make([]model.Leaderboard, len(users))
@@ -156,6 +164,7 @@ func getLeaderboard(users []model.User) []model.Leaderboard {
 	}
 	return leaderboard
 }
+
 func removeTheSame(s []model.Leaderboard) []model.Leaderboard {
 	var (
 		result = make([]model.Leaderboard, 0)
