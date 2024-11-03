@@ -153,6 +153,23 @@ func (g *gitHubAPI) GetRepoDetail(ctx context.Context, repoUrl string, client *g
 	return repository, nil
 }
 
+// GetAllRepositories 获取用户的所有仓库信息
+// 接受用户的昵称和userID,返回所有仓库信息
+func (g *gitHubAPI) GetAllRepositories(ctx context.Context, loginName string, userId int64) []*github.Repository {
+	v, exist := g.clients.Load(userId)
+	if !exist {
+		log.Println("get github client failed")
+		return nil
+	}
+	client := v.(*github.Client)
+	repos, _, err := client.Repositories.List(ctx, loginName, nil)
+	if err != nil {
+		log.Printf("Error getting repositories: %v\n", err)
+		return nil
+	}
+	return repos
+}
+
 func (g *gitHubAPI) GetReadMe(ctx context.Context, repoUrl string, client *github.Client) (readme string, err error) {
 	// 提取用户名和仓库名
 	owner, repo, err := g.parseRepoURL(repoUrl)

@@ -9,11 +9,11 @@ import (
 	"net/http"
 )
 
-// LLMClient 接口定义
-type LLMClient interface {
-	GetDomain(ctx context.Context, req GetDomainRequest) (GetDomainResponse, error)
-	GetEvaluation(ctx context.Context, req GetEvaluationRequest) (GetEvaluationResponse, error)
-}
+//// LLMClient 接口定义
+//type LLMClient interface {
+//	GetDomain(ctx context.Context, req GetDomainRequest) (GetDomainResponse, error)
+//	GetEvaluation(ctx context.Context, req GetEvaluationRequest) (GetEvaluationResponse, error)
+//}
 
 // lLMClient 结构体
 type lLMClient struct {
@@ -25,7 +25,7 @@ type GetEvaluationResponse struct {
 	Evaluation string `json:"evaluation"` // 响应消息内容
 }
 
-func NewLLMClient(cfg *conf.LLMConfig) LLMClient {
+func NewLLMClient(cfg *conf.LLMConfig) *lLMClient {
 	return &lLMClient{cfg: cfg}
 }
 
@@ -64,7 +64,6 @@ func (c *lLMClient) GetEvaluation(ctx context.Context, req GetEvaluationRequest)
 	return response, nil
 }
 
-// GetEvaluation 发送请求以获取评估
 func (c *lLMClient) GetArea(ctx context.Context, req GetAreaRequest) (GetAreaResponse, error) {
 	url := fmt.Sprintf("%s/getArea", c.cfg.Addr)
 
@@ -109,21 +108,14 @@ func (c *lLMClient) sendPostRequest(ctx context.Context, url string, req interfa
 
 // Repo 结构体与 Python 的 Repo 对应
 type Repo struct {
-	Name     string             `json:"name"`     // 仓库名称
-	Readme   string             `json:"readme"`   // README 内容
-	Language map[string]float64 `json:"language"` // 编程语言及其使用比例
-	Commit   int                `json:"commit"`   // 用户的 commit 次数
-	Add      int                `json:"add"`      // 增加的 commit 数量
-	Delete   int                `json:"delete"`   // 减少的 commit 数量
-	Star     int                `json:"star"`     // 被 star 的数量
-	Fork     int                `json:"fork"`     // 被 fork 的数量
+	Name         string `json:"name"`     // 仓库名称
+	MainLanguage string `json:"language"` // 主要的编程语言
 }
 
 // DomainRequest 结构体与 Python 的 DomainRequest 对应
 type GetDomainRequest struct {
-	Repos         []Repo   `json:"repos"`         // 仓库列表
-	Bio           string   `json:"bio"`           // 个人简介
-	Organizations []string `json:"organizations"` // 所属组织
+	Repos []Repo `json:"repos"` // 仓库列表
+	Bio   string `json:"bio"`   // 个人简介
 }
 
 // DomainResponse 结构体与 Python 的 DomainResponse 对应

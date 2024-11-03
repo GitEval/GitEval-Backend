@@ -16,6 +16,7 @@ type UserController interface {
 type UserServiceProxy interface {
 	GetUserById(ctx context.Context, id int64) (model.User, error)
 	GetLeaderboard(ctx context.Context, userId int64) ([]model.Leaderboard, error)
+	GetDomains(ctx context.Context, userId int64) []string
 }
 type userController struct {
 	userService UserServiceProxy
@@ -48,9 +49,13 @@ func (c *userController) GetUser(ctx *gin.Context) {
 		})
 		return
 	}
+	domain := c.userService.GetDomains(ctx, req.UserID)
 	ctx.JSON(http.StatusOK, response.Success{
-		Data: user,
-		Msg:  "success",
+		Data: response.User{
+			U:      user,
+			Domain: domain,
+		},
+		Msg: "success",
 	})
 }
 

@@ -28,7 +28,8 @@ type User struct {
 	AvatarURL         string  `gorm:"column:avatar_url" json:"avatar_url"`                   //用户头像的 URL
 	Collaborators     int     `gorm:"column:collaborators" json:"collaborators"`             //协作者的数量
 	Nationality       *string `gorm:"column:nationality" json:"nationality"`                 //国籍
-	Score             float64 `gorm:"column:score" json:"score"`                             //评分
+	Score             float64 `gorm:"column:score;index" json:"score"`                       //评分
+	Evaluation        string  `gorm:"column:evaluation" json:"evaluation"`                   //评估
 }
 
 type FollowingContact struct {

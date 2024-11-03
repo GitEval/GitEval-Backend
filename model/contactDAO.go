@@ -10,6 +10,11 @@ type GormContactDAO struct {
 	data *Data
 }
 
+func NewGormContactDAO(data *Data) *GormContactDAO {
+	return &GormContactDAO{
+		data: data,
+	}
+}
 func (g GormContactDAO) GetCountOfFollowing(ctx context.Context, id int64) (cnt int64, err error) {
 	db := g.data.Mysql.WithContext(ctx).Table(ContactTable)
 	err = db.Where("subject = ?", id).Count(&cnt).Error
@@ -36,10 +41,4 @@ func (g GormContactDAO) CreateContacts(ctx context.Context, contacts []Following
 		return err
 	}
 	return nil
-}
-
-func NewGormContactDAO(data *Data) *GormContactDAO {
-	return &GormContactDAO{
-		data: data,
-	}
 }
