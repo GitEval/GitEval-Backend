@@ -15,13 +15,8 @@ type GitHubAPIProxy interface {
 	GetUserInfo(ctx context.Context, client *github.Client, username string) (*github.User, error)
 }
 
-type AuthService interface {
-	Login(ctx context.Context) (url string, err error)
-	CallBack(ctx context.Context, code string) (userId int64, err error)
-}
-
-// LLMClient 接口定义
-type LLMClient interface {
+// LLMClientProxy 接口定义
+type LLMClientProxy interface {
 	GetDomain(ctx context.Context, req llm.GetDomainRequest) (llm.GetDomainResponse, error)
 	GetEvaluation(ctx context.Context, req llm.GetEvaluationRequest) (llm.GetEvaluationResponse, error)
 }
@@ -32,14 +27,14 @@ type UserServiceProxy interface {
 	CreateUser(ctx context.Context, u model.User) error
 }
 
-type authService struct {
+type AuthService struct {
 	githubAPI GitHubAPIProxy
 	u         UserServiceProxy
-	llmClient LLMClient
+	llmClient LLMClientProxy
 }
 
-func NewAuthService(u UserServiceProxy, api GitHubAPIProxy, llmClient LLMClient) AuthService {
-	return &authService{
+func NewAuthService(u UserServiceProxy, api GitHubAPIProxy, llmClient LLMClientProxy) *AuthService {
+	return &AuthService{
 		u: u,
 		//因为让其成为中枢，必然要依赖注入到这个authService
 		githubAPI: api,
@@ -47,12 +42,12 @@ func NewAuthService(u UserServiceProxy, api GitHubAPIProxy, llmClient LLMClient)
 	}
 }
 
-func (s *authService) Login(ctx context.Context) (url string, err error) {
+func (s *AuthService) Login(ctx context.Context) (url string, err error) {
 	url = s.githubAPI.GetLoginUrl()
 	return url, nil
 }
 
-func (s *authService) CallBack(ctx context.Context, code string) (userId int64, err error) {
+func (s *AuthService) CallBack(ctx context.Context, code string) (userId int64, err error) {
 	client, err := s.githubAPI.GetClientByCode(code)
 	if err != nil {
 		return 0, err

@@ -10,23 +10,18 @@ import (
 	"net/http"
 )
 
-type UserController interface {
-	GetUser(ctx *gin.Context)
-	GetRanking(ctx *gin.Context)
-	GetEvaluation(ctx *gin.Context)
-}
 type UserServiceProxy interface {
 	GetUserById(ctx context.Context, id int64) (model.User, error)
 	GetLeaderboard(ctx context.Context, userId int64) ([]model.Leaderboard, error)
 	GetDomains(ctx context.Context, userId int64) []string
 	GetEvaluation(ctx context.Context, userId int64) (string, error)
 }
-type userController struct {
+type UserController struct {
 	userService UserServiceProxy
 }
 
-func NewUserController(userService UserServiceProxy) UserController {
-	return &userController{userService: userService}
+func NewUserController(userService UserServiceProxy) *UserController {
+	return &UserController{userService: userService}
 }
 
 // GetUser 获取用户
@@ -37,7 +32,7 @@ func NewUserController(userService UserServiceProxy) UserController {
 // @Success 200 {object} response.Success "登录成功"
 // @Failure 400 {object} response.Err "请求参数错误"
 // @Router /api/v1/user/get/info [get]
-func (c *userController) GetUser(ctx *gin.Context) {
+func (c *UserController) GetUser(ctx *gin.Context) {
 	var req request.GetUserInfo
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, response.Err{
@@ -72,7 +67,7 @@ func (c *userController) GetUser(ctx *gin.Context) {
 // @Success 200 {object} response.Success "登录成功"
 // @Failure 400 {object} response.Err "请求参数错误"
 // @Router /api/v1/user/get/rank [get]
-func (c *userController) GetRanking(ctx *gin.Context) {
+func (c *UserController) GetRanking(ctx *gin.Context) {
 	var req request.GetUserInfo
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, response.Err{
@@ -99,7 +94,7 @@ func (c *userController) GetRanking(ctx *gin.Context) {
 // @Success 200 {object} response.Success "登录成功"
 // @Failure 400 {object} response.Err "请求参数错误"
 // @Router /api/v1/user/get/evaluation [get]
-func (c *userController) GetEvaluation(ctx *gin.Context) {
+func (c *UserController) GetEvaluation(ctx *gin.Context) {
 	var req request.GetEvaluation
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, response.Err{

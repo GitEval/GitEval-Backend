@@ -25,6 +25,7 @@ func NewExpireMap() (ExpireMap, func()) {
 	}
 	//顺便返回一个定时清理函数，后面注入到app中
 	return e, func() {
+		fmt.Println("Begin clean map")
 		e.Clean()
 	}
 }

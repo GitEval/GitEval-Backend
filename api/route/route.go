@@ -2,7 +2,6 @@ package route
 
 import (
 	"github.com/GitEval/GitEval-Backend/conf"
-	"github.com/GitEval/GitEval-Backend/controller"
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
 )
@@ -13,32 +12,37 @@ var ProviderSet = wire.NewSet(
 )
 
 type App struct {
-	r     *gin.Engine
-	c     *conf.AppConf
-	clean func()
+	r *gin.Engine
+	c *conf.AppConf
 }
 
-func NewApp(r *gin.Engine, c *conf.AppConf, clean func()) App {
+func NewApp(r *gin.Engine, c *conf.AppConf) App {
 	return App{
-		r:     r,
-		c:     c,
-		clean: clean,
+		r: r,
+		c: c,
 	}
 }
 
 // 启动
 func (a *App) Run() {
-	//启动map的定时清理任务
-	go a.clean()
 	a.r.Run(a.c.Addr)
 }
 
-func NewRouter(authController controller.AuthController, userController controller.UserController) *gin.Engine {
+type AuthControllerProxy interface {
+	Login(ctx *gin.Context)
+	CallBack(ctx *gin.Context)
+}
+type UserControllerProxy interface {
+	GetUser(ctx *gin.Context)
+	GetRanking(ctx *gin.Context)
+	GetEvaluation(ctx *gin.Context)
+}
+
+func NewRouter(authController AuthControllerProxy, userController UserControllerProxy) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 	g := r.Group("/api/v1")
-
 	//认证服务
 	authGroup := g.Group("/auth")
 	authGroup.GET("/login", authController.Login)

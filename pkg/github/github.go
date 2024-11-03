@@ -19,27 +19,27 @@ const (
 	ExpireTime = time.Hour * 24 * 7
 )
 
-// gitHubAPI 结构体
+// GitHubAPI 结构体
 // 将其当作处理所有有关github账号的中枢,因为它有map
-type gitHubAPI struct {
+type GitHubAPI struct {
 	clients expireMap.ExpireMap // 使用 sync.Map 实现并发安全
 	cfg     *conf.GitHubConfig  // 引用的地址完全相同节约了内存空间
 }
 
-func NewGitHubAPI(c *conf.GitHubConfig, clients expireMap.ExpireMap) *gitHubAPI {
-	return &gitHubAPI{
+func NewGitHubAPI(c *conf.GitHubConfig, clients expireMap.ExpireMap) *GitHubAPI {
+	return &GitHubAPI{
 		cfg:     c,
 		clients: clients,
 	}
 }
 
 // SetClient 设置用户的 GitHub 客户端
-func (g *gitHubAPI) SetClient(userID int64, client *github.Client) {
+func (g *GitHubAPI) SetClient(userID int64, client *github.Client) {
 	g.clients.Store(userID, client, ExpireTime) // 使用 Store 方法
 }
 
 // GetClientFromMap GetClient 获取用户的 GitHub 客户端
-func (g *gitHubAPI) GetClientFromMap(userID int64) (*github.Client, bool) {
+func (g *GitHubAPI) GetClientFromMap(userID int64) (*github.Client, bool) {
 	client, exists := g.clients.Load(userID) // 使用 Load 方法
 	if exists {
 		return client.(*github.Client), true // 类型断言
@@ -47,12 +47,12 @@ func (g *gitHubAPI) GetClientFromMap(userID int64) (*github.Client, bool) {
 	return nil, false
 }
 
-func (g *gitHubAPI) GetLoginUrl() string {
+func (g *GitHubAPI) GetLoginUrl() string {
 	redirectURL := "https://github.com/login/oauth/authorize?client_id=" + g.cfg.ClientID + "&scope=user"
 	return redirectURL
 }
 
-func (g *gitHubAPI) GetClientByCode(code string) (*github.Client, error) {
+func (g *GitHubAPI) GetClientByCode(code string) (*github.Client, error) {
 	// 获取 access token
 	token, err := g.getAccessToken(code)
 	if err != nil {
@@ -67,7 +67,7 @@ func (g *gitHubAPI) GetClientByCode(code string) (*github.Client, error) {
 	return client, nil
 }
 
-func (g *gitHubAPI) GetUserInfo(ctx context.Context, client *github.Client, username string) (*github.User, error) {
+func (g *GitHubAPI) GetUserInfo(ctx context.Context, client *github.Client, username string) (*github.User, error) {
 	userInfo, _, err := client.Users.Get(ctx, username)
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func (g *gitHubAPI) GetUserInfo(ctx context.Context, client *github.Client, user
 	return userInfo, nil
 }
 
-func (g *gitHubAPI) GetFollowing(ctx context.Context, id int64) []model.User {
+func (g *GitHubAPI) GetFollowing(ctx context.Context, id int64) []model.User {
 	val, exist := g.clients.Load(id)
 	if !exist {
 		log.Println("get github client failed")
@@ -90,7 +90,7 @@ func (g *gitHubAPI) GetFollowing(ctx context.Context, id int64) []model.User {
 	return model.TransformUsers(users)
 }
 
-func (g *gitHubAPI) GetFollowers(ctx context.Context, id int64) []model.User {
+func (g *GitHubAPI) GetFollowers(ctx context.Context, id int64) []model.User {
 	val, exist := g.clients.Load(id)
 	if !exist {
 		log.Println("get github client failed")
@@ -105,7 +105,7 @@ func (g *gitHubAPI) GetFollowers(ctx context.Context, id int64) []model.User {
 	return model.TransformUsers(users)
 }
 
-func (g *gitHubAPI) CalculateScore(ctx context.Context, id int64, name string) float64 {
+func (g *GitHubAPI) CalculateScore(ctx context.Context, id int64, name string) float64 {
 	val, exist := g.clients.Load(id)
 	if !exist {
 		log.Println("get github client failed")
@@ -124,7 +124,7 @@ func (g *gitHubAPI) CalculateScore(ctx context.Context, id int64, name string) f
 }
 
 // GetReposDetailList 根据仓库链接获取仓库的详细信息列表
-func (g *gitHubAPI) GetRepoDetail(ctx context.Context, repoUrl string, client *github.Client) (*github.Repository, error) {
+func (g *GitHubAPI) GetRepoDetail(ctx context.Context, repoUrl string, client *github.Client) (*github.Repository, error) {
 
 	// 提取用户名和仓库名
 	owner, repo, err := g.parseRepoURL(repoUrl)
@@ -143,7 +143,7 @@ func (g *gitHubAPI) GetRepoDetail(ctx context.Context, repoUrl string, client *g
 
 // GetAllRepositories 获取用户的所有仓库信息
 // 接受用户的昵称和userID,返回所有仓库信息
-func (g *gitHubAPI) GetAllRepositories(ctx context.Context, loginName string, userId int64) []*github.Repository {
+func (g *GitHubAPI) GetAllRepositories(ctx context.Context, loginName string, userId int64) []*github.Repository {
 	v, exist := g.clients.Load(userId)
 	if !exist {
 		log.Println("get github client failed")
@@ -158,7 +158,7 @@ func (g *gitHubAPI) GetAllRepositories(ctx context.Context, loginName string, us
 	return repos
 }
 
-func (g *gitHubAPI) GetReadMe(ctx context.Context, repoUrl string, client *github.Client) (readme string, err error) {
+func (g *GitHubAPI) GetReadMe(ctx context.Context, repoUrl string, client *github.Client) (readme string, err error) {
 	// 提取用户名和仓库名
 	owner, repo, err := g.parseRepoURL(repoUrl)
 	if err != nil {
@@ -179,7 +179,7 @@ func (g *gitHubAPI) GetReadMe(ctx context.Context, repoUrl string, client *githu
 	return string(content), nil
 }
 
-func (g *gitHubAPI) GetOrganizations(ctx context.Context, userID int64) ([]*github.Organization, error) {
+func (g *GitHubAPI) GetOrganizations(ctx context.Context, userID int64) ([]*github.Organization, error) {
 	val, exist := g.clients.Load(userID)
 	if !exist {
 		log.Println("get github client failed")
@@ -197,7 +197,7 @@ func (g *gitHubAPI) GetOrganizations(ctx context.Context, userID int64) ([]*gith
 	return orgs, nil
 }
 
-func (g *gitHubAPI) GetAllEvents(ctx context.Context, username string, client *github.Client) ([]model.UserEvent, error) {
+func (g *GitHubAPI) GetAllEvents(ctx context.Context, username string, client *github.Client) ([]model.UserEvent, error) {
 	allEvents := make([]*github.Event, 0)
 
 	// 分页设置
@@ -300,7 +300,7 @@ func (g *gitHubAPI) GetAllEvents(ctx context.Context, username string, client *g
 }
 
 // parseRepoURL 从仓库链接中解析出用户名和仓库名
-func (g *gitHubAPI) parseRepoURL(url string) (owner, repo string, err error) {
+func (g *GitHubAPI) parseRepoURL(url string) (owner, repo string, err error) {
 	// 示例仓库链接: https://github.com/owner/repo
 	parts := strings.Split(strings.TrimPrefix(url, "https://github.com/"), "/")
 	if len(parts) < 2 {
@@ -322,7 +322,7 @@ func calculateScore(repos []*github.Repository) float64 {
 	return totalScore
 }
 
-func (g *gitHubAPI) getAccessToken(code string) (string, error) {
+func (g *GitHubAPI) getAccessToken(code string) (string, error) {
 	// 创建 OAuth2 端点
 	oauth2Endpoint := oauth2.Endpoint{
 		TokenURL: "https://github.com/login/oauth/access_token",

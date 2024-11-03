@@ -9,8 +9,8 @@ import (
 	"net/http"
 )
 
-// lLMClient 结构体
-type lLMClient struct {
+// LLMClient 结构体
+type LLMClient struct {
 	cfg *conf.LLMConfig
 }
 
@@ -19,12 +19,12 @@ type GetEvaluationResponse struct {
 	Evaluation string `json:"evaluation"` // 响应消息内容
 }
 
-func NewLLMClient(cfg *conf.LLMConfig) *lLMClient {
-	return &lLMClient{cfg: cfg}
+func NewLLMClient(cfg *conf.LLMConfig) *LLMClient {
+	return &LLMClient{cfg: cfg}
 }
 
 // GetDomain 发送请求以获取领域
-func (c *lLMClient) GetDomain(ctx context.Context, req GetDomainRequest) (GetDomainResponse, error) {
+func (c *LLMClient) GetDomain(ctx context.Context, req GetDomainRequest) (GetDomainResponse, error) {
 	url := fmt.Sprintf("%s/getDomain", c.cfg.Addr)
 	resp, err := c.sendPostRequest(ctx, url, req)
 	if err != nil {
@@ -41,7 +41,7 @@ func (c *lLMClient) GetDomain(ctx context.Context, req GetDomainRequest) (GetDom
 }
 
 // GetEvaluation 发送请求以获取评估
-func (c *lLMClient) GetEvaluation(ctx context.Context, req GetEvaluationRequest) (GetEvaluationResponse, error) {
+func (c *LLMClient) GetEvaluation(ctx context.Context, req GetEvaluationRequest) (GetEvaluationResponse, error) {
 	url := fmt.Sprintf("%s/getEvaluation", c.cfg.Addr)
 
 	resp, err := c.sendPostRequest(ctx, url, req)
@@ -59,7 +59,7 @@ func (c *lLMClient) GetEvaluation(ctx context.Context, req GetEvaluationRequest)
 }
 
 // GetEvaluation 发送请求以获取评估
-func (c *lLMClient) GetArea(ctx context.Context, req GetAreaRequest) (GetAreaResponse, error) {
+func (c *LLMClient) GetArea(ctx context.Context, req GetAreaRequest) (GetAreaResponse, error) {
 	url := fmt.Sprintf("%s/getArea", c.cfg.Addr)
 
 	resp, err := c.sendPostRequest(ctx, url, req)
@@ -77,7 +77,7 @@ func (c *lLMClient) GetArea(ctx context.Context, req GetAreaRequest) (GetAreaRes
 }
 
 // sendPostRequest 通用的 POST 请求发送函数
-func (c *lLMClient) sendPostRequest(ctx context.Context, url string, req interface{}) (*http.Response, error) {
+func (c *LLMClient) sendPostRequest(ctx context.Context, url string, req interface{}) (*http.Response, error) {
 	// 将请求体序列化为 JSON
 	jsonData, err := json.Marshal(req)
 	if err != nil {
