@@ -139,8 +139,6 @@ type GetEvaluationRequest struct {
 	UserEvents        []UserEvent `json:"user_events"`         // 用户事件
 	Domains           []string    `json:"domains"`             // 技术领域
 	CreatedAt         string      `json:"created_at"`          // 建号时间
-	Organizations     []string    `json:"organizations"`       // 所属组织
-	DiskUsage         float64     `json:"disk_usage"`          // 硬盘使用量单位是KB
 }
 
 // UserEvent 结构体与 Python 的 UserEvent 对应
@@ -152,11 +150,11 @@ type UserEvent struct {
 }
 
 type RepoInfo struct {
-	Description      *string `json:"description,omitempty"`       // 仓库描述
-	StargazersCount  *int    `json:"stargazers_count,omitempty"`  // Star 数量
-	ForksCount       *int    `json:"forks_count,omitempty"`       // Fork 数量
-	CreatedAt        *string `json:"created_at,omitempty"`        // 创建时间
-	SubscribersCount *int    `json:"subscribers_count,omitempty"` // 订阅者数量
+	Description      string `json:"description,omitempty"`       // 仓库描述
+	StargazersCount  int    `json:"stargazers_count,omitempty"`  // Star 数量
+	ForksCount       int    `json:"forks_count,omitempty"`       // Fork 数量
+	CreatedAt        string `json:"created_at,omitempty"`        // 创建时间
+	SubscribersCount int    `json:"subscribers_count,omitempty"` // 订阅者数量
 }
 
 // AreaRequest 结构体与 Python 的 AreaRequest 对应
@@ -171,5 +169,5 @@ type GetAreaRequest struct {
 // AreaResponse 结构体与 Python 的 AreaResponse 对应
 type GetAreaResponse struct {
 	Area       string  `json:"area"`       // 区域
-	Confidence float64 `json:"Confidence"` // 信心值
+	Confidence float64 `json:"Confidence"` // 置信度
 }

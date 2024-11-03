@@ -2,7 +2,11 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"github.com/GitEval/GitEval-Backend/model"
+	githubAPI "github.com/GitEval/GitEval-Backend/pkg/github"
+	"github.com/GitEval/GitEval-Backend/pkg/llm"
+	"github.com/google/go-github/v50/github"
 	"log"
 	"sort"
 )
@@ -32,6 +36,12 @@ type GithubProxy interface {
 	GetFollowing(ctx context.Context, id int64) []model.User
 	GetFollowers(ctx context.Context, id int64) []model.User
 	CalculateScore(ctx context.Context, id int64, name string) float64
+	GetAllEvents(ctx context.Context, username string, client *github.Client) ([]githubAPI.UserEvent, error)
+	GetClientFromMap(userID int64) (*github.Client, bool)
+}
+
+type LLMProxy interface {
+	GetEvaluation(ctx context.Context, req llm.GetEvaluationRequest) (llm.GetEvaluationResponse, error)
 }
 
 type UserService struct {
@@ -39,14 +49,16 @@ type UserService struct {
 	contact ContactDAOProxy
 	tx      Transaction
 	g       GithubProxy
+	llm     LLMProxy
 }
 
-func NewUserService(user UserDAOProxy, contact ContactDAOProxy, transaction Transaction, g GithubProxy) *UserService {
+func NewUserService(llm LLMProxy, user UserDAOProxy, contact ContactDAOProxy, transaction Transaction, g GithubProxy) *UserService {
 	return &UserService{
 		user:    user,
 		contact: contact,
 		tx:      transaction,
 		g:       g,
+		llm:     llm,
 	}
 }
 
@@ -132,6 +144,58 @@ func (s *UserService) GetLeaderboard(ctx context.Context, userId int64) ([]model
 		return leaderboard[i].Score > leaderboard[j].Score
 	})
 	return leaderboard, nil
+}
+
+func (s *UserService) GetEvaluation(ctx context.Context, userId int64) (string, error) {
+	user, err := s.user.GetUserByID(ctx, userId)
+	if err != nil {
+		return "", err
+	}
+	followers, err := s.user.GetFollowersUsersJoinContact(ctx, userId)
+	if err != nil {
+		return "", err
+	}
+	following, err := s.user.GetFollowingUsersJoinContact(ctx, userId)
+	if err != nil {
+		return "", err
+	}
+	client, ok := s.g.GetClientFromMap(userId)
+	if !ok {
+		return "", err
+	}
+	events, err := s.g.GetAllEvents(ctx, user.LoginName, client)
+	if err != nil {
+		return "", err
+	}
+	var userEvents []llm.UserEvent
+	for _, event := range events {
+		userEvents = append(userEvents, llm.UserEvent{
+			Repo: &llm.RepoInfo{
+				Description:      event.Repo.Description,
+				StargazersCount:  event.Repo.StargazersCount,
+				ForksCount:       event.Repo.ForksCount,
+				CreatedAt:        event.Repo.CreatedAt,
+				SubscribersCount: event.Repo.SubscribersCount,
+			},
+			CommitCount:      event.CommitCount,
+			IssuesCount:      event.IssuesCount,
+			PullRequestCount: event.PullRequestCount,
+		})
+	}
+	evaluation, err := s.llm.GetEvaluation(ctx, llm.GetEvaluationRequest{
+		Bio:               *user.Bio,
+		Followers:         len(followers),
+		Following:         len(following),
+		TotalPrivateRepos: user.TotalPrivateRepos,
+		TotalPublicRepos:  user.TotalPrivateRepos,
+		UserEvents:        userEvents,
+		Domains:           user.Domain,
+		CreatedAt:         fmt.Sprintf("%v", user.UserCreatedAt),
+	})
+	if err != nil {
+		return "", err
+	}
+	return evaluation.Evaluation, nil
 }
 
 // 从users中得到相应的关系
