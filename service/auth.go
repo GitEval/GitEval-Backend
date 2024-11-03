@@ -14,6 +14,7 @@ type GitHubAPIProxy interface {
 	GetClientByCode(code string) (*github.Client, error)
 	GetUserInfo(ctx context.Context, client *github.Client, username string) (*github.User, error)
 }
+
 type AuthService interface {
 	Login(ctx context.Context) (url string, err error)
 	CallBack(ctx context.Context, code string) (userId int64, err error)

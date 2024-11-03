@@ -12,6 +12,8 @@ import (
 
 type UserController interface {
 	GetUser(ctx *gin.Context)
+	GetRanking(ctx *gin.Context)
+	GetEvaluation(ctx *gin.Context)
 }
 type UserServiceProxy interface {
 	GetUserById(ctx context.Context, id int64) (model.User, error)

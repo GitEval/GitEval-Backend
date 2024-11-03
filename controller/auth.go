@@ -9,7 +9,8 @@ import (
 )
 
 type AuthController interface {
-	Login(ctx *gin.Context) error
+	Login(ctx *gin.Context)
+	CallBack(ctx *gin.Context)
 }
 
 type authController struct {
@@ -29,17 +30,15 @@ func NewAuthController(authService service.AuthService) AuthController {
 // @Failure 400 {object} response.Err "请求参数错误"
 // @Failure 500 {object} response.Err "内部错误"
 // @Router /api/v1/auth/login [get]
-func (c *authController) Login(ctx *gin.Context) error {
+func (c *authController) Login(ctx *gin.Context) {
 	url, err := c.authService.Login(ctx)
 	if err != nil {
 		// 处理错误，比如返回一个错误页面或重定向到错误页面
 		ctx.JSON(http.StatusInternalServerError, response.Err{Err: err})
-		return nil // 或根据需要返回其他值
 	}
 
 	// 重定向到 URL
 	ctx.Redirect(http.StatusFound, url) // HTTP 302
-	return nil
 }
 
 // CallBack 用户在github授权登录之后会被重定向到这里。进行一个请求的发送进行最终验证登录
@@ -51,19 +50,19 @@ func (c *authController) Login(ctx *gin.Context) error {
 // @Success 200 {object} response.Success "初始化成功!"
 // @Failure 400 {object} response.Err "请求参数错误"
 // @Failure 500 {object} response.Err "内部错误"
-// @Router /api/v1/auth/login [get]
-func (c *authController) CallBack(ctx *gin.Context) error {
+// @Router /api/v1/auth/callBack [get]
+func (c *authController) CallBack(ctx *gin.Context) {
 
 	// 绑定查询参数
 	var req request.CallBackReq
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, response.Err{Err: err})
-		return nil
+
 	}
 
 	userid, err := c.authService.CallBack(ctx, req.Code)
 	if err != nil {
-		return err
+		ctx.JSON(http.StatusBadRequest, response.Err{Err: err})
 	}
 
 	ctx.JSON(http.StatusOK, response.Success{
@@ -72,7 +71,7 @@ func (c *authController) CallBack(ctx *gin.Context) error {
 		},
 		Msg: "success",
 	})
-	return nil
+
 }
 
 func (c *authController) Logout(ctx *gin.Context) error {

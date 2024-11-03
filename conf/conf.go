@@ -44,6 +44,7 @@ func NewDataConfig(s *VipperSetting) *DataConfig {
 	s.ReadSection("data", dataConfig)
 	return dataConfig
 }
+
 func NewLLMConfig(s *VipperSetting) *LLMConfig {
 	var llmConfig = &LLMConfig{}
 	s.ReadSection("llm", llmConfig)

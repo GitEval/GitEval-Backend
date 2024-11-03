@@ -2,6 +2,7 @@ package route
 
 import (
 	"github.com/GitEval/GitEval-Backend/conf"
+	"github.com/GitEval/GitEval-Backend/controller"
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
 )
@@ -32,15 +33,22 @@ func (a *App) Run() {
 	a.r.Run(a.c.Addr)
 }
 
-func NewRouter() *gin.Engine {
+func NewRouter(authController controller.AuthController, userController controller.UserController) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"msg": "pong",
-		})
-	})
+	g := r.Group("/api/v1")
+
+	//认证服务
+	authGroup := g.Group("/auth")
+	authGroup.GET("/login", authController.Login)
+	authGroup.GET("/callBack", authController.CallBack)
+
+	//用户服务
+	userGroup := g.Group("/auth")
+	userGroup.GET("/get/info", userController.GetUser)
+	userGroup.GET("/get/rank", userController.GetRanking)
+	userGroup.GET("/get/evaluation", userController.GetEvaluation)
 
 	//后续的接口应该用group来管理
 	//例如:
