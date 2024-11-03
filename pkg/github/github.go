@@ -153,6 +153,27 @@ func (g *gitHubAPI) GetRepoDetail(ctx context.Context, repoUrl string, client *g
 	return repository, nil
 }
 
+// GetUserCommitCount 获取某个用户在指定仓库中的提交次数
+func (g *gitHubAPI) GetUserCommitCount(ctx context.Context, client *github.Client, owner, repo, username string) (int, error) {
+	opt := &github.CommitsListOptions{
+		Author:      username,                         // 设置提交者用户名
+		ListOptions: github.ListOptions{PerPage: 100}, // 分页大小
+	}
+	totalCommits := 0
+
+	for {
+		commits, resp, err := client.Repositories.ListCommits(ctx, owner, repo, opt)
+		if err != nil {
+			return 0, err
+		}
+
+		totalCommits += len(commits) // 累加提交数量
+
+		// 检查是否有下一页
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.Page = resp.NextPage // 设置下一页
 // GetAllRepositories 获取用户的所有仓库信息
 // 接受用户的昵称和userID,返回所有仓库信息
 func (g *gitHubAPI) GetAllRepositories(ctx context.Context, loginName string, userId int64) []*github.Repository {
@@ -191,6 +212,24 @@ func (g *gitHubAPI) GetReadMe(ctx context.Context, repoUrl string, client *githu
 	return string(content), nil
 }
 
+func (g *gitHubAPI) GetOrganizations(ctx context.Context, userID int64) ([]*github.Organization, error) {
+	val, exist := g.clients.Load(userID)
+	if !exist {
+		log.Println("get github client failed")
+		return nil, fmt.Errorf("github client not found for user ID %d", userID)
+	}
+	client := val.(*github.Client)
+
+	// 获取组织列表
+	orgs, _, err := client.Organizations.List(ctx, "", nil)
+	if err != nil {
+		log.Println("Error getting organizations:", err)
+		return nil, err
+	}
+
+	return orgs, nil
+}
+
 func (g *gitHubAPI) GetAllEvents(ctx context.Context, username string, client *github.Client) ([]UserEvent, error) {
 	allEvents := make([]*github.Event, 0)
 
@@ -209,6 +248,9 @@ func (g *gitHubAPI) GetAllEvents(ctx context.Context, username string, client *g
 
 		// 如果没有更多页面，则退出循环
 		if resp.NextPage == 0 {
+			break
+		} else if len(allEvents) > 2000 {
+			//如果事件过多的话就做限流,这个地方还得再明确下
 			break
 		}
 

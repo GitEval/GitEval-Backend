@@ -17,6 +17,7 @@ func NewGormUserDAO(data *Data) *GormUserDAO {
 		data: data,
 	}
 }
+
 func (o *GormUserDAO) CreateUsers(ctx context.Context, users []User) error {
 	db := o.data.DB(ctx).Table(UserTable)
 	err := db.Clauses(clause.OnConflict{UpdateAll: true}).Create(&users).Error
@@ -26,6 +27,7 @@ func (o *GormUserDAO) CreateUsers(ctx context.Context, users []User) error {
 	}
 	return nil
 }
+
 func (o *GormUserDAO) GetUserByID(ctx context.Context, id int64) (u User, err error) {
 	db := o.data.Mysql.WithContext(ctx).Table(UserTable)
 	err = db.Where("id = ?", id).First(&u).Error
@@ -35,6 +37,7 @@ func (o *GormUserDAO) GetUserByID(ctx context.Context, id int64) (u User, err er
 	}
 	return u, nil
 }
+
 func (o *GormUserDAO) GetFollowingUsersJoinContact(ctx context.Context, id int64) (users []User, err error) {
 	db := o.data.Mysql.WithContext(ctx)
 	err = db.Joins("JOIN contacts ON users.id = contacts.subject AND users.id = ?", id).Find(&users).Error
@@ -53,4 +56,14 @@ func (o *GormUserDAO) GetFollowersUsersJoinContact(ctx context.Context, id int64
 		return nil, err
 	}
 	return users, nil
+}
+
+func (o *GormUserDAO) SaveUser(ctx context.Context, user User) error {
+	db := o.data.DB(ctx).Table(UserTable)
+	err := db.Clauses(clause.OnConflict{UpdateAll: true}).Create(&user).Error
+	if err != nil {
+		log.Println("Error saving user")
+		return err
+	}
+	return nil
 }

@@ -64,6 +64,7 @@ func (c *lLMClient) GetEvaluation(ctx context.Context, req GetEvaluationRequest)
 	return response, nil
 }
 
+// GetEvaluation 发送请求以获取评估
 func (c *lLMClient) GetArea(ctx context.Context, req GetAreaRequest) (GetAreaResponse, error) {
 	url := fmt.Sprintf("%s/getArea", c.cfg.Addr)
 
