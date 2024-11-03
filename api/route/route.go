@@ -12,35 +12,47 @@ var ProviderSet = wire.NewSet(
 )
 
 type App struct {
-	r     *gin.Engine
-	c     *conf.AppConf
-	clean func()
+	r *gin.Engine
+	c *conf.AppConf
 }
 
-func NewApp(r *gin.Engine, c *conf.AppConf, clean func()) App {
+func NewApp(r *gin.Engine, c *conf.AppConf) App {
 	return App{
-		r:     r,
-		c:     c,
-		clean: clean,
+		r: r,
+		c: c,
 	}
 }
 
 // 启动
 func (a *App) Run() {
-	//启动map的定时清理任务
-	go a.clean()
 	a.r.Run(a.c.Addr)
 }
 
-func NewRouter() *gin.Engine {
+type AuthControllerProxy interface {
+	Login(ctx *gin.Context)
+	CallBack(ctx *gin.Context)
+}
+type UserControllerProxy interface {
+	GetUser(ctx *gin.Context)
+	GetRanking(ctx *gin.Context)
+	GetEvaluation(ctx *gin.Context)
+}
+
+func NewRouter(authController AuthControllerProxy, userController UserControllerProxy) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"msg": "pong",
-		})
-	})
+	g := r.Group("/api/v1")
+	//认证服务
+	authGroup := g.Group("/auth")
+	authGroup.GET("/login", authController.Login)
+	authGroup.GET("/callBack", authController.CallBack)
+
+	//用户服务
+	userGroup := g.Group("/auth")
+	userGroup.GET("/get/info", userController.GetUser)
+	userGroup.GET("/get/rank", userController.GetRanking)
+	userGroup.GET("/get/evaluation", userController.GetEvaluation)
 
 	//后续的接口应该用group来管理
 	//例如:

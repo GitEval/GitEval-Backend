@@ -24,9 +24,9 @@ func (o *GormUserDAO) CreateUsers(ctx context.Context, users []User) error {
 
 	// 定义要更新的字段（除 Nationality 和 Evaluation 外的所有字段）,有点弱智但是刚刚好
 	updateFields := []string{
-		"LoginName", "Name", "Location", "Email", "Following", "Followers",
-		"Blog", "Bio", "PublicRepos", "TotalPrivateRepos", "Company",
-		"AvatarURL", "Collaborators", "Score",
+		"login_name", "name", "location", "email", "following", "followers",
+		"blog", "bio", "public_repos", "total_private_repos", "company",
+		"avatar_url", "collaborators", "score",
 	}
 
 	// 设置冲突时更新指定字段
