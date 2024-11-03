@@ -28,7 +28,7 @@ func NewUserController(userService UserServiceProxy) UserController {
 
 // GetUser 获取用户
 // @Summary 从userid获取用户
-// @Tags Auth
+// @Tags User
 // @Accept json request.GetUserInfo
 // @Produce json
 // @Success 200 {object} response.Success "登录成功"
@@ -61,7 +61,7 @@ func (c *userController) GetUser(ctx *gin.Context) {
 
 // GetRanking 获取排行
 // @Summary 根据userid获取用户的score的排行榜
-// @Tags Auth
+// @Tags User
 // @Accept json request.GetRanking
 // @Produce json
 // @Success 200 {object} response.Success "登录成功"
@@ -83,4 +83,32 @@ func (c *userController) GetRanking(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, response.Success{Data: rankings, Msg: "success"})
+}
+
+// GetEvaluation 获取用户评价
+// @Summary 根据userid获取用户评价
+// @Tags User
+// @Accept json request.GetEvaluation
+// @Produce json
+// @Success 200 {object} response.Success "登录成功"
+// @Failure 400 {object} response.Err "请求参数错误"
+// @Router /api/v1/user/get/evaluation [get]
+func (c *userController) GetEvaluation(ctx *gin.Context) {
+	var req request.GetEvaluation
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, response.Err{
+			Err: err,
+		})
+		return
+	}
+
+	evaluation, err := c.userService.GetEvaluation(ctx, req.UserID)
+	if err != nil {
+		ctx.JSON(http.StatusOK, response.Err{
+			Err: fmt.Errorf("GetLeaderboard: %w", err),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, response.Success{Data: evaluation, Msg: "success"})
 }

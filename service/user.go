@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"errors"
+	_ "errors"
 	"fmt"
 	"github.com/GitEval/GitEval-Backend/model"
 	"github.com/GitEval/GitEval-Backend/pkg/llm"
@@ -21,9 +21,11 @@ const (
 type UserDAOProxy interface {
 	CreateUsers(ctx context.Context, user []model.User) error
 	GetUserByID(ctx context.Context, id int64) (model.User, error)
+	SaveUser(ctx context.Context, user model.User) error
 	GetFollowingUsersJoinContact(ctx context.Context, id int64) ([]model.User, error)
 	GetFollowersUsersJoinContact(ctx context.Context, id int64) ([]model.User, error)
 }
+
 type ContactDAOProxy interface {
 	GetCountOfFollowing(ctx context.Context, id int64) (int64, error)
 	GetCountOfFollowers(ctx context.Context, id int64) (int64, error)
@@ -42,6 +44,7 @@ type GithubProxy interface {
 type LLMProxy interface {
 	GetArea(ctx context.Context, req llm.GetAreaRequest) (llm.GetAreaResponse, error)
 	GetDomain(ctx context.Context, req llm.GetDomainRequest) (llm.GetDomainResponse, error)
+	GetEvaluation(ctx context.Context, req llm.GetEvaluationRequest) (llm.GetEvaluationResponse, error)
 }
 
 type UserService struct {
@@ -143,6 +146,10 @@ func (s *UserService) GetUserById(ctx context.Context, id int64) (model.User, er
 	return s.user.GetUserByID(ctx, id)
 }
 
+func (s *UserService) SaveUser(ctx context.Context, user model.User) error {
+	return s.user.SaveUser(ctx, user)
+}
+
 // GetLeaderboard 获取排行榜
 func (s *UserService) GetLeaderboard(ctx context.Context, userId int64) ([]model.Leaderboard, error) {
 	var (
@@ -181,55 +188,56 @@ func (s *UserService) GetLeaderboard(ctx context.Context, userId int64) ([]model
 	return leaderboard, nil
 }
 
-// 生成国籍
-func (s *UserService) generateNationality(ctx context.Context, bio, company, location string, followerLoc, followingloc []string) string {
-	res, err := s.l.GetArea(ctx, llm.GetAreaRequest{
-		Bio:            bio,
-		Company:        company,
-		Location:       location,
-		FollowerAreas:  followerLoc,
-		FollowingAreas: followingloc,
+func (s *UserService) GetEvaluation(ctx context.Context, userId int64) (string, error) {
+	user, err := s.user.GetUserByID(ctx, userId)
+	if err != nil {
+		return "", err
+	}
+	followers, err := s.user.GetFollowersUsersJoinContact(ctx, userId)
+	if err != nil {
+		return "", err
+	}
+	following, err := s.user.GetFollowingUsersJoinContact(ctx, userId)
+	if err != nil {
+		return "", err
+	}
+	client, ok := s.g.GetClientFromMap(userId)
+	if !ok {
+		return "", err
+	}
+	events, err := s.g.GetAllEvents(ctx, user.LoginName, client)
+	if err != nil {
+		return "", err
+	}
+	var userEvents []llm.UserEvent
+	for _, event := range events {
+		userEvents = append(userEvents, llm.UserEvent{
+			Repo: &llm.RepoInfo{
+				Description:      event.Repo.Description,
+				StargazersCount:  event.Repo.StargazersCount,
+				ForksCount:       event.Repo.ForksCount,
+				CreatedAt:        event.Repo.CreatedAt,
+				SubscribersCount: event.Repo.SubscribersCount,
+			},
+			CommitCount:      event.CommitCount,
+			IssuesCount:      event.IssuesCount,
+			PullRequestCount: event.PullRequestCount,
+		})
+	}
+	evaluation, err := s.llm.GetEvaluation(ctx, llm.GetEvaluationRequest{
+		Bio:               *user.Bio,
+		Followers:         len(followers),
+		Following:         len(following),
+		TotalPrivateRepos: user.TotalPrivateRepos,
+		TotalPublicRepos:  user.TotalPrivateRepos,
+		UserEvents:        userEvents,
+		Domains:           user.Domain,
+		CreatedAt:         fmt.Sprintf("%v", user.UserCreatedAt),
 	})
 	if err != nil {
-		log.Println(errors.New("failed to get Nationality"))
-		return ""
+		return "", err
 	}
-	//添加置信度
-	nation := fmt.Sprintf("%s(trust:%f)", res.Area, res.Confidence)
-	return nation
-}
-func (s *UserService) generateDomain(ctx context.Context, LoginName, bio string, userId int64) []string {
-	repos := s.g.GetAllRepositories(ctx, LoginName, userId)
-	if len(repos) == 0 {
-		return nil
-	}
-	var r = make([]llm.Repo, len(repos))
-	for k, v := range repos {
-		r[k] = llm.Repo{
-			Name:         *v.Name,
-			MainLanguage: *v.Language,
-		}
-	}
-	resp, err := s.l.GetDomain(ctx, llm.GetDomainRequest{
-		Repos: r,
-		Bio:   bio,
-	})
-	if err != nil {
-		log.Println(errors.New("failed to get domain"))
-		return nil
-	}
-	return resp.Domain
-}
-
-func StringToDomains(lang []string, id int64) []model.Domain {
-	var (
-		domainsModel = make([]model.Domain, len(lang))
-	)
-	for k, v := range lang {
-		domainsModel[k].UserID = id
-		domainsModel[k].Domain = v
-	}
-	return domainsModel
+	return evaluation.Evaluation, nil
 }
 
 // 从users中得到相应的关系
@@ -252,7 +260,6 @@ func getContact(Id int64, users []model.User, follow int) []model.FollowingConta
 	return contact
 }
 
-// 将user结构体转为leaderboard
 func getLeaderboard(users []model.User) []model.Leaderboard {
 	var (
 		leaderboard = make([]model.Leaderboard, len(users))
@@ -264,8 +271,6 @@ func getLeaderboard(users []model.User) []model.Leaderboard {
 	return leaderboard
 }
 
-// 实现去重
-// 利用map
 func removeTheSame(s []model.Leaderboard) []model.Leaderboard {
 	var (
 		result = make([]model.Leaderboard, 0)
