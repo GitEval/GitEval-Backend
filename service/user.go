@@ -26,6 +26,7 @@ type UserDAOProxy interface {
 	SaveUser(ctx context.Context, user model.User) error
 	GetFollowingUsersJoinContact(ctx context.Context, id int64) ([]model.User, error)
 	GetFollowersUsersJoinContact(ctx context.Context, id int64) ([]model.User, error)
+	SearchUser(ctx context.Context, nation, domain string, page int, pageSize int) ([]model.User, error)
 }
 
 type ContactDAOProxy interface {
@@ -36,6 +37,7 @@ type ContactDAOProxy interface {
 type DomainDAOProxy interface {
 	Create(ctx context.Context, domain []model.Domain) error
 	GetDomainById(ctx context.Context, id int64) ([]string, error)
+	Delete(ctx context.Context, id int64) error
 }
 type GithubProxy interface {
 	GetFollowing(ctx context.Context, id int64) []model.User
@@ -148,8 +150,13 @@ func (s *UserService) InitUser(ctx context.Context, u model.User) (err error) {
 		userDomain := s.generateDomain(ctx2, u.LoginName, bio, u.ID)
 		//将获取的结果转化成对应的model
 		domains := StringToDomains(userDomain, u.ID)
+		//先删除之前的记录,这个地方不够优雅
+		err = s.domain.Delete(ctx2, u.ID)
+		if err != nil {
+			return
+		}
 		//存储domain
-		if err := s.domain.Create(ctx2, domains); err != nil {
+		if err = s.domain.Create(ctx2, domains); err != nil {
 			return
 		}
 	}()
@@ -179,59 +186,6 @@ func (s *UserService) CreateUser(ctx context.Context, u model.User) error {
 		return err
 	}
 	return nil
-}
-
-// 生成国籍
-func (s *UserService) generateNationality(ctx context.Context, bio, company, location *string, followerLoc, followingloc []string) string {
-	res, err := s.l.GetArea(ctx, llm.GetAreaRequest{
-		Bio:            bio,
-		Company:        company,
-		Location:       location,
-		FollowerAreas:  followerLoc,
-		FollowingAreas: followingloc,
-	})
-	if err != nil {
-		log.Println(errors.New("failed to get Nationality"))
-		return ""
-	}
-	//添加置信度
-	nation := fmt.Sprintf("%s(trust:%.2f)", res.Area, res.Confidence)
-	return nation
-}
-
-func (s *UserService) generateDomain(ctx context.Context, LoginName, bio string, userId int64) []string {
-	repos := s.g.GetAllRepositories(ctx, LoginName, userId)
-	if len(repos) == 0 {
-		return nil
-	}
-	var r = make([]llm.Repo, len(repos))
-	for k, v := range repos {
-		r[k] = llm.Repo{
-			Name:         v.Name,
-			MainLanguage: v.Language,
-			Readme:       v.Readme,
-		}
-	}
-	resp, err := s.l.GetDomain(ctx, llm.GetDomainRequest{
-		Repos: r,
-		Bio:   bio,
-	})
-	if err != nil {
-		log.Println(errors.New("failed to get domain"))
-		return nil
-	}
-	return resp.Domain
-}
-
-func StringToDomains(lang []string, id int64) []model.Domain {
-	var (
-		domainsModel = make([]model.Domain, len(lang))
-	)
-	for k, v := range lang {
-		domainsModel[k].UserID = id
-		domainsModel[k].Domain = v
-	}
-	return domainsModel
 }
 
 // GetLeaderboard 获取排行榜
@@ -331,6 +285,102 @@ func (s *UserService) GetEvaluation(ctx context.Context, userId int64) (string, 
 	return evaluation.Evaluation, nil
 }
 
+func (s *UserService) GetNationByUserId(ctx context.Context, userId int64) (string, error) {
+	user, err := s.user.GetUserByID(ctx, userId)
+	if err != nil {
+		log.Println("get user failed")
+		return "", err
+	}
+	followers, err := s.user.GetFollowersUsersJoinContact(ctx, userId)
+	if err != nil {
+		return "", err
+	}
+	following, err := s.user.GetFollowingUsersJoinContact(ctx, userId)
+	if err != nil {
+		return "", err
+	}
+
+	var (
+		followersLoc = make([]string, len(followers))
+		followingLoc = make([]string, len(following))
+	)
+
+	// 获取followers和following的Loction
+	for _, v := range followers {
+		if v.Location != nil {
+			followersLoc = append(followersLoc, *v.Location)
+		}
+	}
+
+	for _, v := range following {
+		if v.Location != nil {
+			followingLoc = append(followingLoc, *v.Location)
+		}
+	}
+
+	Nation := s.generateNationality(ctx, user.Bio, user.Company, user.Location, followersLoc, followingLoc)
+	user.Nationality = Nation
+	err = s.user.SaveUser(ctx, user)
+	if err != nil {
+		return "", err
+	}
+
+	return Nation, nil
+}
+
+func (s *UserService) GetDomainByUserId(ctx context.Context, userId int64) ([]string, error) {
+	user, err := s.user.GetUserByID(ctx, userId)
+	if err != nil {
+		log.Println("get user failed")
+		return nil, err
+	}
+
+	// 测试通过,花费时间大概要到10s左右
+	var bio string
+	//获取这个用户的主要技术领域
+	if user.Bio == nil {
+		bio = ""
+	} else {
+		bio = *user.Bio
+	}
+
+	userDomain := s.generateDomain(ctx, user.LoginName, bio, user.ID)
+	//将获取的结果转化成对应的model
+	domains := StringToDomains(userDomain, user.ID)
+	//先删除之前的记录
+	err = s.domain.Delete(ctx, user.ID)
+	if err != nil {
+		return []string{}, err
+	}
+
+	//存储domain
+	if err := s.domain.Create(ctx, domains); err != nil {
+		return []string{}, err
+	}
+
+	var resp []string
+	for _, domain := range domains {
+		resp = append(resp, domain.Domain)
+	}
+	return resp, nil
+
+}
+
+func (s *UserService) SearchUser(ctx context.Context, nation, domain string, page int, pageSize int) ([]model.User, error) {
+	return s.user.SearchUser(ctx, nation, domain, page, pageSize)
+}
+
+func StringToDomains(lang []string, id int64) []model.Domain {
+	var (
+		domainsModel = make([]model.Domain, len(lang))
+	)
+	for k, v := range lang {
+		domainsModel[k].UserID = id
+		domainsModel[k].Domain = v
+	}
+	return domainsModel
+}
+
 // 从users中得到相应的关系
 func getContact(Id int64, users []model.User, follow int) []model.FollowingContact {
 	var (
@@ -375,4 +425,52 @@ func removeTheSame(s []model.Leaderboard) []model.Leaderboard {
 		result = append(result, model.Leaderboard{UserID: k, Score: v})
 	}
 	return result
+}
+
+// 生成国籍
+func (s *UserService) generateNationality(ctx context.Context, bio, company, location *string, followerLoc, followingloc []string) string {
+	res, err := s.l.GetArea(ctx, llm.GetAreaRequest{
+		Bio:            bio,
+		Company:        company,
+		Location:       location,
+		FollowerAreas:  followerLoc,
+		FollowingAreas: followingloc,
+	})
+	if err != nil {
+		log.Println(errors.New("failed to get Nationality"))
+		return ""
+	}
+	//添加置信度
+	nation := fmt.Sprintf("%s|(trust:%.2f)", res.Area, res.Confidence)
+	return nation
+}
+
+func (s *UserService) generateDomain(ctx context.Context, LoginName, bio string, userId int64) []string {
+	repos := s.g.GetAllRepositories(ctx, LoginName, userId)
+	if len(repos) == 0 {
+		return nil
+	}
+	var r = make([]llm.Repo, len(repos))
+	for k, v := range repos {
+		r[k] = llm.Repo{
+			Name:         v.Name,
+			MainLanguage: v.Language,
+			Readme:       v.Readme,
+		}
+	}
+	domains, err := s.l.GetDomain(ctx, llm.GetDomainRequest{
+		Repos: r,
+		Bio:   bio,
+	})
+	if err != nil {
+		log.Println(errors.New("failed to get domain"))
+		return nil
+	}
+
+	//添加置信度
+	var resp []string
+	for _, domain := range domains.Domains {
+		resp = append(resp, fmt.Sprintf("%s|(trust:%.2f)", domain.Domain, domain.Confidence))
+	}
+	return resp
 }

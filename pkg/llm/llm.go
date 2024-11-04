@@ -117,9 +117,12 @@ type GetDomainRequest struct {
 
 // DomainResponse 结构体与 Python 的 DomainResponse 对应
 type GetDomainResponse struct {
-	Domain []string `json:"domain"` // 响应消息内容
+	Domains []Domain `json:"domains"`
 }
-
+type Domain struct {
+	Domain     string  `json:"domain"`
+	Confidence float64 `json:"confidence"`
+}
 type RepoInfo struct {
 	Name             *string `json:"name,omitempty"`
 	Description      *string `json:"description,omitempty"`

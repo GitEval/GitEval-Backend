@@ -22,6 +22,17 @@ type Ranking struct {
 	Leaderboard []model.Leaderboard `json:"leaderboard"`
 }
 
-type Evaluation struct {
+type EvaluationResp struct {
 	Evaluation string `json:"evaluation"`
+}
+
+type NationResp struct {
+	Nation string `json:"nation"`
+}
+
+type DomainResp struct {
+	Domain []string `json:"domain"`
+}
+type SearchResp struct {
+	Users []model.User `json:"users"`
 }

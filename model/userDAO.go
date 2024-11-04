@@ -88,3 +88,24 @@ func (o *GormUserDAO) SaveUser(ctx context.Context, user User) error {
 	}
 	return nil
 }
+
+func (o *GormUserDAO) SearchUser(ctx context.Context, nation, domain string, page int, pageSize int) (users []User, err error) {
+	db := o.data.Mysql.WithContext(ctx)
+
+	// 这里用 LIKE 来查找 nation 字段在 '|' 之前与传入的 nation 相匹配,domain也使用相同的方法进行模糊匹配
+	err = db.Select("DISTINCT users.*").
+		Joins("JOIN contacts ON contacts.user_id = users.id").
+		Where("SUBSTRING_INDEX(contacts.domain, '|', 1) = ?", domain).
+		Where("SUBSTRING_INDEX(users.nation, '|', 1) = ?", nation).
+		Order("users.score DESC"). // 按照 score 字段从高到低排序
+		Offset((page - 1) * pageSize). // 分页
+		Limit(pageSize). // 设置每页大小
+		Find(&users).Error
+
+	if err != nil {
+		log.Println("Error getting followers users:", err)
+		return nil, err
+	}
+
+	return users, nil
+}

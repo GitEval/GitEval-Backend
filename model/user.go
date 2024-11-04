@@ -38,6 +38,7 @@ type FollowingContact struct {
 	Subject int64  `gorm:"column:subject;index:idx_contact" json:"subject"` //主体
 	Object  int64  `gorm:"column:object;index:idx_contact" json:"object"`   //被关注的客体
 }
+
 type Leaderboard struct {
 	UserID int64   `json:"user_id"`
 	Score  float64 `json:"score"`

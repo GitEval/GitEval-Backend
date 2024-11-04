@@ -17,7 +17,7 @@ const docTemplate = `{
     "paths": {
         "/api/v1/auth/login": {
             "get": {
-                "description": "github重定向,用来初始化这个用户",
+                "description": "github重定向,用来初始化这个用户,会返回一个user_id,userid是用在后续的请求上的",
                 "produces": [
                     "application/json"
                 ],
@@ -68,7 +68,59 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/user/get/evaluation": {
+        "/api/v1/user/getDomain": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "根据用户 ID 获取用户的领域",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "用户ID, 暂时没写 JWT 和 cookie 之类的, 所以直接传 user_id",
+                        "name": "user_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "领域获取成功",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "Data": {
+                                            "$ref": "#/definitions/response.DomainResp"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Err"
+                        }
+                    },
+                    "404": {
+                        "description": "用户未找到",
+                        "schema": {
+                            "$ref": "#/definitions/response.Err"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/user/getEvaluation": {
             "get": {
                 "produces": [
                     "application/json"
@@ -98,7 +150,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "Data": {
-                                            "$ref": "#/definitions/response.Evaluation"
+                                            "$ref": "#/definitions/response.EvaluationResp"
                                         }
                                     }
                                 }
@@ -114,7 +166,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/user/get/info": {
+        "/api/v1/user/getInfo": {
             "get": {
                 "produces": [
                     "application/json"
@@ -160,7 +212,59 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/user/get/rank": {
+        "/api/v1/user/getNation": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "根据用户 ID 获取用户所在国家",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "用户ID, 暂时没写 JWT 和 cookie 之类的, 所以直接传 user_id",
+                        "name": "user_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "国家获取成功",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "Data": {
+                                            "$ref": "#/definitions/response.NationResp"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Err"
+                        }
+                    },
+                    "404": {
+                        "description": "用户未找到",
+                        "schema": {
+                            "$ref": "#/definitions/response.Err"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/user/getRank": {
             "get": {
                 "produces": [
                     "application/json"
@@ -191,6 +295,69 @@ const docTemplate = `{
                                     "properties": {
                                         "Data": {
                                             "$ref": "#/definitions/response.Ranking"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Err"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/user/search": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "根据国家和领域搜索用户",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "国家，选择性参数",
+                        "name": "nation",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "领域，选择性参数",
+                        "name": "domain",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "分页参数表示这是第几页",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页返回的用户数量，建议一次返回10个",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "用户搜索成功",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Success"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "Data": {
+                                            "$ref": "#/definitions/response.SearchResp"
                                         }
                                     }
                                 }
@@ -299,16 +466,35 @@ const docTemplate = `{
                 }
             }
         },
+        "response.DomainResp": {
+            "type": "object",
+            "properties": {
+                "domain": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "response.Err": {
             "type": "object",
             "properties": {
                 "error": {}
             }
         },
-        "response.Evaluation": {
+        "response.EvaluationResp": {
             "type": "object",
             "properties": {
                 "evaluation": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.NationResp": {
+            "type": "object",
+            "properties": {
+                "nation": {
                     "type": "string"
                 }
             }
@@ -320,6 +506,17 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/model.Leaderboard"
+                    }
+                }
+            }
+        },
+        "response.SearchResp": {
+            "type": "object",
+            "properties": {
+                "users": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.User"
                     }
                 }
             }

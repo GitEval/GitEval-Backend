@@ -64,13 +64,25 @@ definitions:
       user_id:
         type: integer
     type: object
+  response.DomainResp:
+    properties:
+      domain:
+        items:
+          type: string
+        type: array
+    type: object
   response.Err:
     properties:
       error: {}
     type: object
-  response.Evaluation:
+  response.EvaluationResp:
     properties:
       evaluation:
+        type: string
+    type: object
+  response.NationResp:
+    properties:
+      nation:
         type: string
     type: object
   response.Ranking:
@@ -78,6 +90,13 @@ definitions:
       leaderboard:
         items:
           $ref: '#/definitions/model.Leaderboard'
+        type: array
+    type: object
+  response.SearchResp:
+    properties:
+      users:
+        items:
+          $ref: '#/definitions/model.User'
         type: array
     type: object
   response.Success:
@@ -100,7 +119,7 @@ info:
 paths:
   /api/v1/auth/login:
     get:
-      description: github重定向,用来初始化这个用户
+      description: github重定向,用来初始化这个用户,会返回一个user_id,userid是用在后续的请求上的
       parameters:
       - description: github重定向的code
         in: query
@@ -130,7 +149,38 @@ paths:
       summary: github重定向
       tags:
       - Auth
-  /api/v1/user/get/evaluation:
+  /api/v1/user/getDomain:
+    get:
+      parameters:
+      - description: 用户ID, 暂时没写 JWT 和 cookie 之类的, 所以直接传 user_id
+        in: query
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 领域获取成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Success'
+            - properties:
+                Data:
+                  $ref: '#/definitions/response.DomainResp'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Err'
+        "404":
+          description: 用户未找到
+          schema:
+            $ref: '#/definitions/response.Err'
+      summary: 根据用户 ID 获取用户的领域
+      tags:
+      - User
+  /api/v1/user/getEvaluation:
     get:
       parameters:
       - description: 用户ID,暂时没写jwt和cookie之类的,所以直接传user_id
@@ -148,7 +198,7 @@ paths:
             - $ref: '#/definitions/response.Success'
             - properties:
                 Data:
-                  $ref: '#/definitions/response.Evaluation'
+                  $ref: '#/definitions/response.EvaluationResp'
               type: object
         "400":
           description: 请求参数错误
@@ -157,7 +207,7 @@ paths:
       summary: 根据userid获取用户评价
       tags:
       - User
-  /api/v1/user/get/info:
+  /api/v1/user/getInfo:
     get:
       parameters:
       - description: 用户ID,暂时没写jwt和cookie之类的,所以直接传user_id
@@ -184,7 +234,38 @@ paths:
       summary: 从userid获取用户
       tags:
       - User
-  /api/v1/user/get/rank:
+  /api/v1/user/getNation:
+    get:
+      parameters:
+      - description: 用户ID, 暂时没写 JWT 和 cookie 之类的, 所以直接传 user_id
+        in: query
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 国家获取成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Success'
+            - properties:
+                Data:
+                  $ref: '#/definitions/response.NationResp'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Err'
+        "404":
+          description: 用户未找到
+          schema:
+            $ref: '#/definitions/response.Err'
+      summary: 根据用户 ID 获取用户所在国家
+      tags:
+      - User
+  /api/v1/user/getRank:
     get:
       parameters:
       - description: 用户ID,暂时没写jwt和cookie之类的,所以直接传user_id
@@ -209,6 +290,44 @@ paths:
           schema:
             $ref: '#/definitions/response.Err'
       summary: 根据userid获取用户的score的排行榜
+      tags:
+      - User
+  /api/v1/user/search:
+    get:
+      parameters:
+      - description: 国家，选择性参数
+        in: query
+        name: nation
+        type: string
+      - description: 领域，选择性参数
+        in: query
+        name: domain
+        type: string
+      - description: 分页参数表示这是第几页
+        in: query
+        name: page
+        type: integer
+      - description: 每页返回的用户数量，建议一次返回10个
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 用户搜索成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Success'
+            - properties:
+                Data:
+                  $ref: '#/definitions/response.SearchResp'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Err'
+      summary: 根据国家和领域搜索用户
       tags:
       - User
 swagger: "2.0"

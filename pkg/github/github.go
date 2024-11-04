@@ -135,7 +135,7 @@ func (g *GitHubAPI) CalculateScore(ctx context.Context, id int64, name string) f
 		return 0
 	}
 	client := val.(*github.Client)
-	// 获取用户的公开仓库
+	// TODO 获取用户的公开仓库,这里似乎无法正常获取,导致出现问题
 	repos, _, err := client.Repositories.List(ctx, name, nil)
 	if err != nil {
 		log.Printf("Error getting repositories: %v\n", err)

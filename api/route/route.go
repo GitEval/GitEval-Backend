@@ -36,6 +36,9 @@ type UserControllerProxy interface {
 	GetUser(ctx *gin.Context)
 	GetRanking(ctx *gin.Context)
 	GetEvaluation(ctx *gin.Context)
+	GetNation(ctx *gin.Context)
+	GetDomain(ctx *gin.Context)
+	SearchUser(ctx *gin.Context)
 }
 
 func NewRouter(authController AuthControllerProxy, userController UserControllerProxy) *gin.Engine {
@@ -50,9 +53,12 @@ func NewRouter(authController AuthControllerProxy, userController UserController
 
 	//用户服务
 	userGroup := g.Group("/user")
-	userGroup.GET("/get/info", userController.GetUser)
-	userGroup.GET("/get/rank", userController.GetRanking)
-	userGroup.GET("/get/evaluation", userController.GetEvaluation)
+	userGroup.GET("/getInfo", userController.GetUser)
+	userGroup.GET("/getRank", userController.GetRanking)
+	userGroup.GET("/getEvaluation", userController.GetEvaluation)
+	userGroup.GET("/getNation", userController.GetNation)
+	userGroup.GET("/getDomain", userController.GetDomain)
+	userGroup.GET("/searchUser", userController.SearchUser)
 
 	//后续的接口应该用group来管理
 	//例如:

@@ -34,3 +34,13 @@ func (o *GormDomainDAO) Create(ctx context.Context, domain []Domain) error {
 	}
 	return nil
 }
+
+func (o *GormDomainDAO) Delete(ctx context.Context, id int64) error {
+	db := o.data.DB(ctx).Table(DomainTable)
+	err := db.Where("id = ?", id).Error
+	if err != nil {
+		log.Println("Error deleting domain")
+		return err
+	}
+	return nil
+}
