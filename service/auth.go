@@ -63,6 +63,7 @@ func (s *AuthService) CallBack(ctx context.Context, code string) (userId int64, 
 	// 如果用户不存在，创建新用户,如果存在
 	if (user == model.User{}) {
 		user = model.User{
+			LoginName:         userInfo.GetLogin(),
 			ID:                userInfo.GetID(),
 			AvatarURL:         userInfo.GetAvatarURL(),
 			Name:              userInfo.Name,

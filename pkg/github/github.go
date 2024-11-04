@@ -150,15 +150,18 @@ func (g *GitHubAPI) GetAllRepositories(ctx context.Context, loginName string, us
 		return nil
 	}
 	client := v.(*github.Client)
-	repos, _, err := client.Repositories.List(ctx, loginName, nil)
+	repos, _, err := client.Repositories.List(ctx, loginName, &github.RepositoryListOptions{
+		Sort:        "created",                       // 按创建时间排序
+		Direction:   "desc",                          // 降序排列，从新到旧
+		ListOptions: github.ListOptions{PerPage: 20}, // 每页最多获取20个
+	})
 	if err != nil {
 		log.Printf("Error getting repositories: %v\n", err)
 		return nil
 	}
 	var resp []*model.Repo
-	for i, repo := range repos {
+	for _, repo := range repos {
 		//尝试获取每个仓库的Readme
-
 		me, err := g.GetReadMe(ctx, repo.GetURL(), client)
 		if err != nil {
 			log.Println("get github readme failed:", err)
@@ -168,11 +171,6 @@ func (g *GitHubAPI) GetAllRepositories(ctx context.Context, loginName string, us
 			Readme:   &me,
 			Language: repo.Language,
 		})
-
-		//TODO 这里可能需要进行限流,设置一个最大数量,这里暂时设置的是20
-		if i+1 == 20 {
-			break
-		}
 	}
 	return resp
 }
@@ -320,8 +318,7 @@ func (g *GitHubAPI) GetAllEvents(ctx context.Context, username string, client *g
 
 // parseRepoURL 从仓库链接中解析出用户名和仓库名
 func (g *GitHubAPI) parseRepoURL(url string) (owner, repo string, err error) {
-	// 示例仓库链接: https://github.com/owner/repo
-	parts := strings.Split(strings.TrimPrefix(url, "https://github.com/"), "/")
+	parts := strings.Split(strings.TrimPrefix(url, "https://api.github.com/repos/"), "/")
 	if len(parts) < 2 {
 		return "", "", fmt.Errorf("invalid GitHub repository URL")
 	}

@@ -148,9 +148,9 @@ type RepoInfo struct {
 
 // AreaRequest 结构体与 Python 的 AreaRequest 对应
 type GetAreaRequest struct {
-	Bio            string   `json:"bio"`             // 个人简介
-	Company        string   `json:"company"`         // 公司
-	Location       string   `json:"location"`        // 地点
+	Bio            *string  `json:"bio"`             // 个人简介
+	Company        *string  `json:"company"`         // 公司
+	Location       *string  `json:"location"`        // 地点
 	FollowerAreas  []string `json:"follower_areas"`  // 粉丝地区
 	FollowingAreas []string `json:"following_areas"` // 关注者地区
 }

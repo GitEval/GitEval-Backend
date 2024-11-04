@@ -125,18 +125,19 @@ func (s *UserService) InitUser(ctx context.Context, u model.User) (err error) {
 		return err
 	}
 
-	////此处进行异步处理
-	//go func() {
-	//	ctx1 := context.Background()
-	//	//得到用户的国籍,尝试存储这个用户的国籍
-	//	Nation := s.generateNationality(ctx1, *u.Bio, *u.Company, *u.Location, followersLoc, followingLoc)
-	//	u.Nationality = Nation
-	//	err := s.user.SaveUser(ctx1, u)
-	//	if err != nil {
-	//		return
-	//	}
-	//}()
+	// 测试通过,花费时间大概10s
+	go func() {
+		ctx1 := context.Background()
+		//得到用户的国籍,尝试存储这个用户的国籍
+		Nation := s.generateNationality(ctx1, u.Bio, u.Company, u.Location, followersLoc, followingLoc)
+		u.Nationality = Nation
+		err := s.user.SaveUser(ctx1, u)
+		if err != nil {
+			return
+		}
+	}()
 
+	// 测试通过,花费时间大概要到10s左右
 	go func() {
 		ctx2 := context.Background()
 		var bio string
@@ -181,7 +182,7 @@ func (s *UserService) CreateUser(ctx context.Context, u model.User) error {
 }
 
 // 生成国籍
-func (s *UserService) generateNationality(ctx context.Context, bio, company, location string, followerLoc, followingloc []string) string {
+func (s *UserService) generateNationality(ctx context.Context, bio, company, location *string, followerLoc, followingloc []string) string {
 	res, err := s.l.GetArea(ctx, llm.GetAreaRequest{
 		Bio:            bio,
 		Company:        company,
@@ -194,7 +195,7 @@ func (s *UserService) generateNationality(ctx context.Context, bio, company, loc
 		return ""
 	}
 	//添加置信度
-	nation := fmt.Sprintf("%s(trust:%f)", res.Area, res.Confidence)
+	nation := fmt.Sprintf("%s(trust:%.2f)", res.Area, res.Confidence)
 	return nation
 }
 
