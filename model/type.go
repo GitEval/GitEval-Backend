@@ -1,11 +1,12 @@
 package model
 
 type RepoInfo struct {
-	Description      string `json:"Description"`
-	StargazersCount  int    `json:"StargazersCount"`
-	ForksCount       int    `json:"ForksCount"`
-	CreatedAt        string `json:"CreatedAt"`
-	SubscribersCount int    `json:"SubscribersCount"`
+	Name             *string `json:"name"` // 仓库名称
+	Description      *string `json:"description"`
+	StargazersCount  *int    `json:"stargazers_count"`
+	ForksCount       *int    `json:"forks_count"`
+	CreatedAt        *string `json:"created_at"`
+	SubscribersCount *int    `json:"subscribers_count"`
 }
 
 type Repo struct {
@@ -15,27 +16,25 @@ type Repo struct {
 }
 
 type UserEvent struct {
-	Repo             *RepoInfo `json:"repo"`
-	CommitCount      int       `json:"commit_count"`
-	Commit           []string  `json:"commit"`
-	IssuesCount      int       `json:"issues_count"`
-	Issues           []string  `json:"issues"`
-	PullRequest      []string  `json:"pull_request"`
-	PullRequestCount int       `json:"pull_request_count"`
+	Repo             RepoInfo `json:"repo"`
+	PushCount        int      `json:"push_count"`
+	IssuesCount      int      `json:"issues_count"`
+	PullRequestCount int      `json:"pull_request_count"`
 }
 
-type IssuesEventPayload struct {
-	Action string `json:"action"`
-	Issue  struct {
-		Title string `json:"title"`
-		Body  string `json:"body"`
-	} `json:"issue"`
-}
-
-type PullRequestEventPayload struct {
-	Action      string `json:"action"`
-	PullRequest struct {
-		Title string `json:"title"`
-		Body  string `json:"body"`
-	} `json:"pull_request"`
-}
+//弃用了,涉及的东西太多,评价体系太复杂,效果还一般
+//type IssuesEventPayload struct {
+//	Action string `json:"action"`
+//	Issue  struct {
+//		Title string `json:"title"`
+//		Body  string `json:"body"`
+//	} `json:"issue"`
+//}
+//
+//type PullRequestEventPayload struct {
+//	Action      string `json:"action"`
+//	PullRequest struct {
+//		Title string `json:"title"`
+//		Body  string `json:"body"`
+//	} `json:"pull_request"`
+//}

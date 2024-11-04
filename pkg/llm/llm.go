@@ -49,6 +49,7 @@ func (c *LLMClient) GetEvaluation(ctx context.Context, req GetEvaluationRequest)
 		return GetEvaluationResponse{}, err
 	}
 	defer resp.Body.Close()
+
 	// 处理响应
 	var response GetEvaluationResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
@@ -119,31 +120,30 @@ type GetDomainResponse struct {
 	Domain []string `json:"domain"` // 响应消息内容
 }
 
-// EvaluationRequest 结构体与 Python 的 EvaluationRequest 对应
-type GetEvaluationRequest struct {
-	Bio               string      `json:"bio"`                 // 个人简介
-	Followers         int         `json:"followers"`           // 粉丝
-	Following         int         `json:"following"`           // 关注
-	TotalPrivateRepos int         `json:"total_private_repos"` // 私人仓库数量
-	TotalPublicRepos  int         `json:"total_public_repos"`  // 公开仓库数量
-	UserEvents        []UserEvent `json:"user_events"`         // 用户事件
-	Domains           []string    `json:"domains"`             // 技术领域
-}
-
-// UserEvent 结构体与 Python 的 UserEvent 对应
-type UserEvent struct {
-	Repo             *RepoInfo `json:"repo"`               // 仓库信息
-	CommitCount      int       `json:"commit_count"`       // 提交计数
-	IssuesCount      int       `json:"issues_count"`       // Issue 计数
-	PullRequestCount int       `json:"pull_request_count"` // Pull Request 计数
-}
-
 type RepoInfo struct {
-	Description      string `json:"description,omitempty"`       // 仓库描述
-	StargazersCount  int    `json:"stargazers_count,omitempty"`  // Star 数量
-	ForksCount       int    `json:"forks_count,omitempty"`       // Fork 数量
-	CreatedAt        string `json:"created_at,omitempty"`        // 创建时间
-	SubscribersCount int    `json:"subscribers_count,omitempty"` // 订阅者数量
+	Name             *string `json:"name,omitempty"`
+	Description      *string `json:"description,omitempty"`
+	StargazersCount  *int    `json:"stargazers_count,omitempty"`
+	ForksCount       *int    `json:"forks_count,omitempty"`
+	CreatedAt        *string `json:"created_at,omitempty"`
+	SubscribersCount *int    `json:"subscribers_count,omitempty"`
+}
+
+type UserEvent struct {
+	Repo             *RepoInfo `json:"repo,omitempty"`
+	CommitCount      int       `json:"commit_count"`
+	IssuesCount      int       `json:"issues_count"`
+	PullRequestCount int       `json:"pull_request_count"`
+}
+
+type GetEvaluationRequest struct {
+	Bio               *string     `json:"bio,omitempty"`
+	Followers         int         `json:"followers"`
+	Following         int         `json:"following"`
+	TotalPrivateRepos int         `json:"total_private_repos"`
+	TotalPublicRepos  int         `json:"total_public_repos"`
+	UserEvents        []UserEvent `json:"user_events"`
+	Domains           *[]string   `json:"domains"`
 }
 
 // AreaRequest 结构体与 Python 的 AreaRequest 对应

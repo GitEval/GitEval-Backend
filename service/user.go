@@ -5,6 +5,7 @@ import (
 	"errors"
 	_ "errors"
 	"fmt"
+	"github.com/GitEval/GitEval-Backend/errs"
 	"github.com/GitEval/GitEval-Backend/model"
 	"github.com/GitEval/GitEval-Backend/pkg/llm"
 	"github.com/google/go-github/v50/github"
@@ -42,7 +43,7 @@ type GithubProxy interface {
 	CalculateScore(ctx context.Context, id int64, name string) float64
 	GetAllRepositories(ctx context.Context, loginName string, userId int64) []*model.Repo
 	GetClientFromMap(userID int64) (*github.Client, bool)
-	GetAllEvents(ctx context.Context, username string, client *github.Client) ([]model.UserEvent, error)
+	GetAllUserEvents(ctx context.Context, username string, client *github.Client) ([]model.UserEvent, error)
 }
 type LLMProxy interface {
 	GetArea(ctx context.Context, req llm.GetAreaRequest) (llm.GetAreaResponse, error)
@@ -101,7 +102,6 @@ func (s *UserService) InitUser(ctx context.Context, u model.User) (err error) {
 		}
 		v.Score = s.g.CalculateScore(ctx, u.ID, v.LoginName)
 	}
-	users = append(users, u)
 
 	//得到关系
 	followingContact := getContact(u.ID, following, Following)
@@ -281,51 +281,53 @@ func (s *UserService) GetEvaluation(ctx context.Context, userId int64) (string, 
 	if err != nil {
 		return "", err
 	}
+
 	following, err := s.user.GetFollowingUsersJoinContact(ctx, userId)
 	if err != nil {
 		return "", err
 	}
+
 	client, ok := s.g.GetClientFromMap(userId)
 	if !ok {
-		return "", err
+		return "", errs.LoginFailErr
 	}
-	events, err := s.g.GetAllEvents(ctx, user.LoginName, client)
+
+	events, err := s.g.GetAllUserEvents(ctx, user.LoginName, client)
 	if err != nil {
 		return "", err
 	}
+
 	var userEvents []llm.UserEvent
 	for _, event := range events {
 		userEvents = append(userEvents, llm.UserEvent{
 			Repo: &llm.RepoInfo{
+				Name:             event.Repo.Name,
 				Description:      event.Repo.Description,
 				StargazersCount:  event.Repo.StargazersCount,
 				ForksCount:       event.Repo.ForksCount,
 				CreatedAt:        event.Repo.CreatedAt,
 				SubscribersCount: event.Repo.SubscribersCount,
 			},
-			CommitCount:      event.CommitCount,
+			CommitCount:      event.PushCount,
 			IssuesCount:      event.IssuesCount,
 			PullRequestCount: event.PullRequestCount,
 		})
 	}
-
-	domains, err := s.domain.GetDomainById(ctx, user.ID)
-	if err != nil {
-		return "", err
-	}
-
+	//此处允许获取值为空而不报错,因为可能用户没有成功获取领域就直接开始做评价了
+	domains, _ := s.domain.GetDomainById(ctx, user.ID)
 	evaluation, err := s.l.GetEvaluation(ctx, llm.GetEvaluationRequest{
-		Bio:               *user.Bio,
+		Bio:               user.Bio,
 		Followers:         len(followers),
 		Following:         len(following),
 		TotalPrivateRepos: user.TotalPrivateRepos,
-		TotalPublicRepos:  user.TotalPrivateRepos,
+		TotalPublicRepos:  user.PublicRepos,
 		UserEvents:        userEvents,
-		Domains:           domains,
+		Domains:           &domains,
 	})
 	if err != nil {
 		return "", err
 	}
+
 	return evaluation.Evaluation, nil
 }
 

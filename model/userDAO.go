@@ -55,9 +55,12 @@ func (o *GormUserDAO) GetUserByID(ctx context.Context, id int64) (u User, err er
 
 func (o *GormUserDAO) GetFollowingUsersJoinContact(ctx context.Context, id int64) (users []User, err error) {
 	db := o.data.Mysql.WithContext(ctx)
-	err = db.Joins("JOIN contacts ON users.id = contacts.subject AND users.id = ?", id).Find(&users).Error
+	err = db.Select("DISTINCT users.*").
+		Joins("JOIN contacts ON contacts.object = users.id").
+		Where("contacts.subject = ?", id).
+		Find(&users).Error
 	if err != nil {
-		log.Println("Error getting following users")
+		log.Println("Error getting followers users")
 		return nil, err
 	}
 	return users, nil
@@ -65,7 +68,10 @@ func (o *GormUserDAO) GetFollowingUsersJoinContact(ctx context.Context, id int64
 
 func (o *GormUserDAO) GetFollowersUsersJoinContact(ctx context.Context, id int64) (users []User, err error) {
 	db := o.data.Mysql.WithContext(ctx)
-	err = db.Joins("JOIN contacts ON users.id = contacts.object AND users.id =?", id).Find(&users).Error
+	err = db.Select("DISTINCT users.*").
+		Joins("JOIN contacts ON contacts.subject = users.id").
+		Where("contacts.object = ?", id).
+		Find(&users).Error
 	if err != nil {
 		log.Println("Error getting followers users")
 		return nil, err

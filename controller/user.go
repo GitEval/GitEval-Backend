@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/GitEval/GitEval-Backend/api/request"
 	"github.com/GitEval/GitEval-Backend/api/response"
+	"github.com/GitEval/GitEval-Backend/errs"
 	"github.com/GitEval/GitEval-Backend/model"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -104,12 +105,19 @@ func (c *UserController) GetEvaluation(ctx *gin.Context) {
 	}
 
 	evaluation, err := c.userService.GetEvaluation(ctx, req.UserID)
-	if err != nil {
+	switch err {
+	case errs.LoginFailErr:
+		//返回一个重定向的状态码,让前端做重定向,因为后端得不到实际的ip,我暂时只对这里进行了处理,看看cc有没有更好的想法
+		ctx.JSON(http.StatusFound, response.Err{
+			Err: fmt.Errorf("GetEvaluation: %w", err),
+		})
+		return
+	case nil:
+		ctx.JSON(http.StatusOK, response.Success{Data: response.Evaluation{Evaluation: evaluation}, Msg: "success"})
+	default:
 		ctx.JSON(http.StatusOK, response.Err{
 			Err: fmt.Errorf("GetEvaluation: %w", err),
 		})
 		return
 	}
-
-	ctx.JSON(http.StatusOK, response.Success{Data: response.Evaluation{Evaluation: evaluation}, Msg: "success"})
 }

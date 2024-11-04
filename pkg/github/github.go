@@ -3,7 +3,6 @@ package github
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"github.com/GitEval/GitEval-Backend/conf"
 	"github.com/GitEval/GitEval-Backend/model"
@@ -79,30 +78,54 @@ func (g *GitHubAPI) GetFollowing(ctx context.Context, id int64) []model.User {
 	val, exist := g.clients.Load(id)
 	if !exist {
 		log.Println("get github client failed")
-		return nil
+		return []model.User{}
 	}
 	client := val.(*github.Client)
 	users, _, err := client.Users.ListFollowing(ctx, "", nil)
 	if err != nil {
 		log.Println("get github following user failed:", err)
-		return nil
+		return []model.User{}
 	}
-	return model.TransformUsers(users)
+
+	// 获取详细用户信息
+	var detailedUsers []model.User
+	for _, user := range users {
+		detailedUser, _, err := client.Users.Get(ctx, *user.Login)
+		if err != nil {
+			log.Println("get user details failed:", err)
+			continue
+		}
+		detailedUsers = append(detailedUsers, model.TransformUser(detailedUser))
+	}
+
+	return detailedUsers
 }
 
 func (g *GitHubAPI) GetFollowers(ctx context.Context, id int64) []model.User {
 	val, exist := g.clients.Load(id)
 	if !exist {
 		log.Println("get github client failed")
-		return nil
+		return []model.User{}
 	}
 	client := val.(*github.Client)
 	users, _, err := client.Users.ListFollowers(ctx, "", nil)
 	if err != nil {
-		log.Println("get github following user failed")
-		return nil
+		log.Println("get github followers user failed:", err)
+		return []model.User{}
 	}
-	return model.TransformUsers(users)
+
+	// 获取详细用户信息
+	var detailedUsers []model.User
+	for _, user := range users {
+		detailedUser, _, err := client.Users.Get(ctx, *user.Login)
+		if err != nil {
+			log.Println("get user details failed:", err)
+			continue
+		}
+		detailedUsers = append(detailedUsers, model.TransformUser(detailedUser))
+	}
+
+	return detailedUsers
 }
 
 func (g *GitHubAPI) CalculateScore(ctx context.Context, id int64, name string) float64 {
@@ -214,7 +237,7 @@ func (g *GitHubAPI) GetOrganizations(ctx context.Context, userID int64) ([]*gith
 	return orgs, nil
 }
 
-func (g *GitHubAPI) GetAllEvents(ctx context.Context, username string, client *github.Client) ([]model.UserEvent, error) {
+func (g *GitHubAPI) GetAllUserEvents(ctx context.Context, username string, client *github.Client) ([]model.UserEvent, error) {
 	allEvents := make([]*github.Event, 0)
 
 	// 分页设置
@@ -233,7 +256,7 @@ func (g *GitHubAPI) GetAllEvents(ctx context.Context, username string, client *g
 		// 如果没有更多页面，则退出循环
 		if resp.NextPage == 0 {
 			break
-		} else if len(allEvents) > 2000 {
+		} else if len(allEvents) >= 2000 {
 			//如果事件过多的话就做限流,这个地方还得再明确下
 			break
 		}
@@ -244,65 +267,37 @@ func (g *GitHubAPI) GetAllEvents(ctx context.Context, username string, client *g
 
 	// 使用一个映射来分类不同的UserEvent
 	userEventsMap := make(map[string]*model.UserEvent)
+	info, err := g.getUserAllRepoInfo(ctx, client, "")
+	if err != nil {
+		return nil, err
+	}
 
 	for _, event := range allEvents {
 		repoName := event.Repo.GetName()
 
 		// 如果该repo的UserEvent还未创建，则初始化
 		if _, exists := userEventsMap[repoName]; !exists {
-			userEventsMap[repoName] = &model.UserEvent{
-				Commit:      []string{},
-				Issues:      []string{},
-				PullRequest: []string{},
+			//尝试初始化
+			userEventsMap[repoName] = &model.UserEvent{Repo: model.RepoInfo{Name: &repoName}}
+			//如果存在于用户的仓库中则直接完全初始化这个仓库
+			if _, ok := info[repoName]; ok {
+				userEventsMap[repoName].Repo = *info[repoName]
 			}
 		}
 
 		userEvent := userEventsMap[repoName] // 获取当前repo的UserEvent实例
-
 		switch event.GetType() {
 		case "PushEvent":
-			// 收集提交信息
-			userEvent.Commit = append(userEvent.Commit, event.Repo.GetName()) // 这里可以替换为更详细的提交信息
-			// 更新repo信息
-			if userEvent.Repo == nil {
-				userEvent.Repo = &model.RepoInfo{
-					Description:      event.Repo.GetDescription(),
-					StargazersCount:  event.Repo.GetStargazersCount(),
-					ForksCount:       event.Repo.GetForksCount(),
-					CreatedAt:        event.Repo.GetCreatedAt().String(),
-					SubscribersCount: event.Repo.GetSubscribersCount(),
-				}
-			}
 			// 更新提交计数
-			userEvent.CommitCount++
+			userEvent.PushCount++
 
 		case "IssuesEvent":
-			// 创建 IssuesEventPayload 实例用于存储解析后的数据
-			var payload model.IssuesEventPayload
-
-			// 解析 RawPayload 中的 JSON 数据
-			if err := json.Unmarshal(*event.RawPayload, &payload); err != nil {
-				log.Printf("Failed to parse IssuesEvent payload: %v", err)
-				continue
-			}
-
 			// 记录 issue 信息
 			userEvent.IssuesCount++
-			userEvent.Issues = append(userEvent.Issues, payload.Issue.Title) // 添加 Issue 的标题或其他信息
 
 		case "PullRequestEvent":
-			// 创建 PullRequestEventPayload 实例用于存储解析后的数据
-			var payload model.PullRequestEventPayload
-
-			// 解析 RawPayload 中的 JSON 数据
-			if err := json.Unmarshal(*event.RawPayload, &payload); err != nil {
-				log.Printf("Failed to parse PullRequestEvent payload: %v", err)
-				continue
-			}
-
 			// 记录 Pull Request 信息
 			userEvent.PullRequestCount++
-			userEvent.PullRequest = append(userEvent.PullRequest, payload.PullRequest.Title) // 添加 PR 的标题或其他信息
 
 		}
 	}
@@ -314,6 +309,49 @@ func (g *GitHubAPI) GetAllEvents(ctx context.Context, username string, client *g
 	}
 
 	return userEventsSlice, nil
+}
+
+func (g *GitHubAPI) getUserAllRepoInfo(ctx context.Context, client *github.Client, username string) (map[string]*model.RepoInfo, error) {
+	// 创建一个 map 用于存储仓库名称和对应的仓库信息
+	repoMap := make(map[string]*model.RepoInfo)
+	opt := &github.RepositoryListOptions{
+		ListOptions: github.ListOptions{PerPage: 100},
+	}
+	for {
+		// 获取用户的仓库信息
+		repos, resp, err := client.Repositories.List(ctx, username, opt)
+
+		if err != nil {
+			return nil, err
+		}
+
+		// 将获取到的仓库信息存入 map
+		for _, repo := range repos {
+			if repo.Name != nil {
+				created_at := repo.CreatedAt.Time.String()
+				name := repo.GetFullName()
+				repoMap[name] = &model.RepoInfo{
+					Name:             &name,
+					Description:      repo.Description,
+					StargazersCount:  repo.StargazersCount,
+					ForksCount:       repo.ForksCount,
+					CreatedAt:        &created_at,
+					SubscribersCount: repo.SubscribersCount,
+				}
+			}
+
+		}
+
+		// 如果没有更多页面，则退出循环,如果map的数量过于庞大自动退出
+		if resp.NextPage == 0 || len(repoMap) == 1000 {
+			break
+		}
+
+		// 更新分页选项以请求下一页
+		opt.Page = resp.NextPage
+	}
+
+	return repoMap, nil
 }
 
 // parseRepoURL 从仓库链接中解析出用户名和仓库名
@@ -352,7 +390,7 @@ func (g *GitHubAPI) getAccessToken(code string) (string, error) {
 		Endpoint:     oauth2Endpoint,
 	}
 
-	// 获取访问令牌
+	// TODO 获取访问令牌,这个地方经常出现请求超时,需要研究下原因
 	token, err := cf.Exchange(ctx, code)
 	if err != nil {
 		return "", err

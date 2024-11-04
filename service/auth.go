@@ -83,8 +83,7 @@ func (s *AuthService) CallBack(ctx context.Context, code string) (userId int64, 
 		if err != nil {
 			return 0, err
 		}
-		//存储用户
-		s.githubAPI.SetClient(user.ID, client)
+
 		//这里做异步主要是为了保证用户体验,否则等待时间过长了
 		go func() {
 			// 初始化用户关系网
@@ -95,6 +94,8 @@ func (s *AuthService) CallBack(ctx context.Context, code string) (userId int64, 
 		}()
 
 	}
+	//存储用户到内存中去
+	s.githubAPI.SetClient(user.ID, client)
 
 	return user.ID, nil
 }
