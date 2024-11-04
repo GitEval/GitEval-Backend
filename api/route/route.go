@@ -58,7 +58,7 @@ func NewRouter(authController AuthControllerProxy, userController UserController
 	userGroup.GET("/getEvaluation", userController.GetEvaluation)
 	userGroup.GET("/getNation", userController.GetNation)
 	userGroup.GET("/getDomain", userController.GetDomain)
-	userGroup.GET("/searchUser", userController.SearchUser)
+	userGroup.GET("/search", userController.SearchUser)
 
 	//后续的接口应该用group来管理
 	//例如:

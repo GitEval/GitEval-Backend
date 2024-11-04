@@ -203,7 +203,7 @@ func (c *UserController) GetDomain(ctx *gin.Context) {
 // @Param nation query string false "国家，选择性参数"
 // @Param domain query string false "领域，选择性参数"
 // @Param page query int false "分页参数表示这是第几页"
-// @Param pageSize query int false "每页返回的用户数量，建议一次返回10个"
+// @Param page_size query int false "每页返回的用户数量，建议一次返回10个"
 // @Produce json
 // @Success 200 {object} response.Success{Data=response.SearchResp} "用户搜索成功"
 // @Failure 400 {object} response.Err "请求参数错误"

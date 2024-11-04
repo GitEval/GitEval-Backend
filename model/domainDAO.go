@@ -14,10 +14,11 @@ func NewGormDomainDAO(d *Data) *GormDomainDAO {
 		data: d,
 	}
 }
+
 func (o *GormDomainDAO) GetDomainById(ctx context.Context, id int64) ([]string, error) {
 	var lang []string
 	db := o.data.Mysql.WithContext(ctx).Table(DomainTable)
-	err := db.Where("id = ?", id).Select("domain").Find(&lang).Error
+	err := db.Where("user_id = ?", id).Select("domain").Find(&lang).Error
 	if err != nil {
 		log.Println("Error getting domain by ID")
 		return nil, err
@@ -37,7 +38,7 @@ func (o *GormDomainDAO) Create(ctx context.Context, domain []Domain) error {
 
 func (o *GormDomainDAO) Delete(ctx context.Context, id int64) error {
 	db := o.data.DB(ctx).Table(DomainTable)
-	err := db.Where("id = ?", id).Error
+	err := db.Where("user_id = ?", id).Error
 	if err != nil {
 		log.Println("Error deleting domain")
 		return err

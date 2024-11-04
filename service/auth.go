@@ -12,6 +12,7 @@ type GitHubAPIProxy interface {
 	SetClient(userID int64, client *github.Client)
 	GetClientFromMap(userID int64) (*github.Client, bool)
 	GetClientByCode(code string) (*github.Client, error)
+	CalculateScore(ctx context.Context, id int64, name string) float64
 	GetUserInfo(ctx context.Context, client *github.Client, username string) (*github.User, error)
 }
 
@@ -77,7 +78,9 @@ func (s *AuthService) CallBack(ctx context.Context, code string) (userId int64, 
 			Following:         userInfo.GetFollowing(),
 			TotalPrivateRepos: userInfo.GetTotalPrivateRepos(),
 			Collaborators:     userInfo.GetCollaborators(),
+			Score:             s.githubAPI.CalculateScore(ctx, userInfo.GetID(), userInfo.GetLogin()), //获取用户的分数
 		}
+
 		//首次创建用户
 		err = s.u.CreateUser(ctx, user)
 		if err != nil {

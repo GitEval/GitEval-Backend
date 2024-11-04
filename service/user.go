@@ -89,7 +89,7 @@ func (s *UserService) InitUser(ctx context.Context, u model.User) (err error) {
 		followingLoc = make([]string, len(following))
 	)
 
-	// 获取followers和following的Loction
+	// 获取followers和following的Location
 	// 顺便计算他们的分数
 	for _, v := range followers {
 		if v.Location != nil {
@@ -105,6 +105,9 @@ func (s *UserService) InitUser(ctx context.Context, u model.User) (err error) {
 		v.Score = s.g.CalculateScore(ctx, u.ID, v.LoginName)
 	}
 
+	//将user二次存入,这个地方主要是为了能够保证每次用户上号这个评分都能更新
+	u.Score = s.g.CalculateScore(ctx, u.ID, u.LoginName)
+	users = append(users, u)
 	//得到关系
 	followingContact := getContact(u.ID, following, Following)
 	followersContact := getContact(u.ID, followers, Followers)
