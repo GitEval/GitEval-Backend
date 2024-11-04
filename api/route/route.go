@@ -49,7 +49,7 @@ func NewRouter(authController AuthControllerProxy, userController UserController
 	authGroup.GET("/callBack", authController.CallBack)
 
 	//用户服务
-	userGroup := g.Group("/auth")
+	userGroup := g.Group("/user")
 	userGroup.GET("/get/info", userController.GetUser)
 	userGroup.GET("/get/rank", userController.GetRanking)
 	userGroup.GET("/get/evaluation", userController.GetEvaluation)
