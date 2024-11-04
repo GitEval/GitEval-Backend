@@ -1,6 +1,9 @@
 package conf
 
-import "github.com/google/wire"
+import (
+	"github.com/google/wire"
+	"golang.org/x/oauth2/jwt"
+)
 
 var ProviderSet = wire.NewSet(
 	NewVipperSetting,
@@ -29,6 +32,11 @@ type LLMConfig struct {
 	Addr string `yaml:"addr"`
 }
 
+type JWTConfig struct {
+	SecretKey string `yaml:"secret-key"` //秘钥
+	Timeout   int    `yaml:"timeout"`    //过期时间
+}
+
 func NewAppConf(s *VipperSetting) *AppConf {
 	var appconf = &AppConf{}
 	s.ReadSection("app", appconf)
@@ -49,4 +57,9 @@ func NewLLMConfig(s *VipperSetting) *LLMConfig {
 	var llmConfig = &LLMConfig{}
 	s.ReadSection("llm", llmConfig)
 	return llmConfig
+}
+func NewJWTConfig(s *VipperSetting) *jwt.Config {
+	var jwtConf = &JWTConfig{}
+	s.ReadSection("jwt", jwtConf)
+	return jwtConf
 }
