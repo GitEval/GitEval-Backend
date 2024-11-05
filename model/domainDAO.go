@@ -27,6 +27,9 @@ func (o *GormDomainDAO) GetDomainById(ctx context.Context, id int64) ([]string, 
 }
 
 func (o *GormDomainDAO) Create(ctx context.Context, domain []Domain) error {
+	if len(domain) == 0 {
+		return nil
+	}
 	db := o.data.DB(ctx).Table(DomainTable)
 	err := db.Create(&domain).Error
 	if err != nil {

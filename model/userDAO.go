@@ -20,6 +20,10 @@ func NewGormUserDAO(data *Data) *GormUserDAO {
 
 // CreateUsers 这里更新的数据不包括国籍和评价
 func (o *GormUserDAO) CreateUsers(ctx context.Context, users []User) error {
+	if len(users) == 0 {
+		return nil
+	}
+
 	db := o.data.DB(ctx).Table(UserTable)
 
 	// 定义要更新的字段（除 Nationality 和 Evaluation 外的所有字段）,有点弱智但是刚刚好
@@ -97,9 +101,9 @@ func (o *GormUserDAO) SearchUser(ctx context.Context, nation, domain string, pag
 		Joins("JOIN domain ON domain.user_id = users.id").
 		Where("SUBSTRING_INDEX(domain.domain, '|', 1) = ?", domain).
 		Where("SUBSTRING_INDEX(users.nationality, '|', 1) = ?", nation).
-		Order("users.score DESC"). // 按照 score 字段从高到低排序
+		Order("users.score DESC").     // 按照 score 字段从高到低排序
 		Offset((page - 1) * pageSize). // 分页
-		Limit(pageSize). // 设置每页大小
+		Limit(pageSize).               // 设置每页大小
 		Find(&users).Error
 
 	if err != nil {

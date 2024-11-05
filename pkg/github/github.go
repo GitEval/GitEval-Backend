@@ -129,7 +129,7 @@ func (g *GitHubAPI) GetFollowers(ctx context.Context, id int64) []model.User {
 }
 
 func (g *GitHubAPI) CalculateScore(ctx context.Context, id int64, name string) float64 {
-	var client *github.Client
+	var client = &github.Client{}
 	val, exist := g.clients.Load(id)
 	if !exist {
 		// 创建一个 GitHub 客户端（无需认证）

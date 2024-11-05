@@ -63,6 +63,7 @@ func (c *FollowingContact) BeforeCreate(tx *gorm.DB) (err error) {
 func TransformUser(userInfo *github.User) User {
 	return User{
 		ID:                userInfo.GetID(),
+		LoginName:         userInfo.GetLogin(),
 		AvatarURL:         userInfo.GetAvatarURL(),
 		Name:              userInfo.Name,
 		Company:           userInfo.Company,
@@ -76,11 +77,4 @@ func TransformUser(userInfo *github.User) User {
 		TotalPrivateRepos: userInfo.GetTotalPrivateRepos(),
 		Collaborators:     userInfo.GetCollaborators(),
 	}
-}
-func TransformUsers(users []*github.User) []User {
-	var transformedUsers []User
-	for _, user := range users {
-		transformedUsers = append(transformedUsers, TransformUser(user))
-	}
-	return transformedUsers
 }
