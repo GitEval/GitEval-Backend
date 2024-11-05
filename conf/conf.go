@@ -2,7 +2,6 @@ package conf
 
 import (
 	"github.com/google/wire"
-	"golang.org/x/oauth2/jwt"
 )
 
 var ProviderSet = wire.NewSet(
@@ -58,7 +57,7 @@ func NewLLMConfig(s *VipperSetting) *LLMConfig {
 	s.ReadSection("llm", llmConfig)
 	return llmConfig
 }
-func NewJWTConfig(s *VipperSetting) *jwt.Config {
+func NewJWTConfig(s *VipperSetting) *JWTConfig {
 	var jwtConf = &JWTConfig{}
 	s.ReadSection("jwt", jwtConf)
 	return jwtConf
