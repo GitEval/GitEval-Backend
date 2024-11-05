@@ -341,7 +341,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "description": "每页返回的用户数量，建议一次返回10个",
-                        "name": "pageSize",
+                        "name": "page_size",
                         "in": "query"
                     }
                 ],
@@ -378,11 +378,17 @@ const docTemplate = `{
         "model.Leaderboard": {
             "type": "object",
             "properties": {
+                "avatar_url": {
+                    "type": "string"
+                },
                 "score": {
                     "type": "number"
                 },
                 "user_id": {
                     "type": "integer"
+                },
+                "user_name": {
+                    "type": "string"
                 }
             }
         },

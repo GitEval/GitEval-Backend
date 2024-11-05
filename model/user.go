@@ -40,8 +40,10 @@ type FollowingContact struct {
 }
 
 type Leaderboard struct {
-	UserID int64   `json:"user_id"`
-	Score  float64 `json:"score"`
+	UserID    int64   `json:"user_id"`
+	UserName  string  `json:"user_name"`
+	AvatarURL string  `json:"avatar_url"`
+	Score     float64 `json:"score"`
 }
 
 func (u *User) TableName() string {

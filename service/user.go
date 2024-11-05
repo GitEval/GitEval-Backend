@@ -203,8 +203,10 @@ func (s *UserService) GetLeaderboard(ctx context.Context, userId int64) ([]model
 		return nil, err
 	}
 	leaderboard = append(leaderboard, model.Leaderboard{
-		UserID: user.ID,
-		Score:  user.Score,
+		UserID:    user.ID,
+		UserName:  user.LoginName,
+		AvatarURL: user.AvatarURL,
+		Score:     user.Score,
 	})
 	//获取following
 	followings, err := s.user.GetFollowingUsersJoinContact(ctx, userId)
@@ -410,6 +412,8 @@ func getLeaderboard(users []model.User) []model.Leaderboard {
 	)
 	for k, user := range users {
 		leaderboard[k].UserID = user.ID
+		leaderboard[k].UserName = user.LoginName
+		leaderboard[k].AvatarURL = user.AvatarURL
 		leaderboard[k].Score = user.Score
 	}
 	return leaderboard
