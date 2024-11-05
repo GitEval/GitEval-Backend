@@ -1,10 +1,14 @@
 definitions:
   model.Leaderboard:
     properties:
+      avatar_url:
+        type: string
       score:
         type: number
       user_id:
         type: integer
+      user_name:
+        type: string
     type: object
   model.User:
     properties:
@@ -309,7 +313,7 @@ paths:
         type: integer
       - description: 每页返回的用户数量，建议一次返回10个
         in: query
-        name: pageSize
+        name: page_size
         type: integer
       produces:
       - application/json
