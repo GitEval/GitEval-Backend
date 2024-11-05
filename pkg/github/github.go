@@ -134,9 +134,9 @@ func (g *GitHubAPI) CalculateScore(ctx context.Context, id int64, name string) f
 	if !exist {
 		// 创建一个 GitHub 客户端（无需认证）
 		client = github.NewClient(nil) // nil 表示没有使用任何认证
+	} else {
+		client = val.(*github.Client)
 	}
-
-	client = val.(*github.Client)
 	repos, _, err := client.Repositories.List(ctx, name, nil)
 	if err != nil {
 		log.Printf("Error getting repositories: %v\n", err)

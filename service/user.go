@@ -422,14 +422,14 @@ func getLeaderboard(users []model.User) []model.Leaderboard {
 func removeTheSame(s []model.Leaderboard) []model.Leaderboard {
 	var (
 		result = make([]model.Leaderboard, 0)
-		mp     = make(map[int64]float64)
+		mp     = make(map[int64]model.Leaderboard)
 	)
 
 	for _, v := range s {
-		mp[v.UserID] = v.Score
+		mp[v.UserID] = v
 	}
-	for k, v := range mp {
-		result = append(result, model.Leaderboard{UserID: k, Score: v})
+	for _, v := range mp {
+		result = append(result, v)
 	}
 	return result
 }
