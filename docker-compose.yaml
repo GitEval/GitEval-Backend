@@ -15,7 +15,7 @@ services:
     image: "giteval:v1"
     restart: "always"
     volumes:
-      - "./conf/config.yaml:/app/conf/config.yaml"
+      - "./conf:/app/conf"
     ports:
       - "8080:8080"
     depends_on:
