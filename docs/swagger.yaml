@@ -266,6 +266,33 @@ paths:
       summary: 根据userid获取用户的score的排行榜
       tags:
       - User
+  /api/v1/user/getUserInfo:
+    get:
+      parameters:
+      - description: 用户的user_id
+        in: query
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 用户信息获取成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Success'
+            - properties:
+                data:
+                  $ref: '#/definitions/response.User'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Err'
+      summary: 根据userid获取用户详细信息
+      tags:
+      - User
   /api/v1/user/search:
     get:
       parameters:

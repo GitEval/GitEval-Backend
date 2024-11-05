@@ -18,7 +18,7 @@ func NewJWTClient(config *conf.JWTConfig) *JWTClient {
 // GenerateToken 生成 ParTokener token
 func (c *JWTClient) GenerateToken(userID int64) (string, error) {
 	// 设置过期时间
-	expirationTime := time.Now().Add(24 * time.Hour)
+	expirationTime := time.Now().Add(time.Duration(c.cfg.Timeout))
 
 	// 创建 token
 	claims := &jwt.StandardClaims{

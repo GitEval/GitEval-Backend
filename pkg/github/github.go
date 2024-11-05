@@ -129,12 +129,14 @@ func (g *GitHubAPI) GetFollowers(ctx context.Context, id int64) []model.User {
 }
 
 func (g *GitHubAPI) CalculateScore(ctx context.Context, id int64, name string) float64 {
+	var client *github.Client
 	val, exist := g.clients.Load(id)
 	if !exist {
-		log.Println("get github client failed")
-		return 0
+		// 创建一个 GitHub 客户端（无需认证）
+		client = github.NewClient(nil) // nil 表示没有使用任何认证
 	}
-	client := val.(*github.Client)
+
+	client = val.(*github.Client)
 	repos, _, err := client.Repositories.List(ctx, name, nil)
 	if err != nil {
 		log.Printf("Error getting repositories: %v\n", err)
@@ -368,7 +370,7 @@ func calculateScore(repos []*github.Repository) float64 {
 	for _, repo := range repos {
 		if repo.StargazersCount != nil && repo.ForksCount != nil && repo.Size != nil {
 			// 评分公式示例
-			score := float64(*repo.StargazersCount)*0.5 + float64(*repo.ForksCount)*0.3 + float64(*repo.Size)*0.2
+			score := float64(*repo.StargazersCount)*0.5 + float64(*repo.ForksCount)*0.3 + float64(*repo.Size/1024)*0.2
 			totalScore += score
 		}
 	}

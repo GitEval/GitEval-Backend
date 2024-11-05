@@ -4,6 +4,7 @@ go 1.22.7
 
 require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/gin-contrib/cors v1.7.2
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/go-github/v50 v50.2.0
 	github.com/google/wire v0.6.0
