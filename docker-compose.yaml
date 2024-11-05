@@ -4,7 +4,7 @@ services:
     image: mysql
     restart: "always"
     ports:
-      - "1306:3306"
+      - "13306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: "12345678"
       MYSQL_DATABASE: "GitEval"
