@@ -268,12 +268,6 @@ paths:
       - User
   /api/v1/user/getUserInfo:
     get:
-      parameters:
-      - description: 用户的user_id
-        in: query
-        name: user_id
-        required: true
-        type: string
       produces:
       - application/json
       responses:

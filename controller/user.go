@@ -234,23 +234,21 @@ func (c *UserController) SearchUser(ctx *gin.Context) {
 // GetUserInfo 根据userid获取用户详细信息
 // @Summary 根据userid获取用户详细信息
 // @Tags User
-// @Param user_id query string true "用户的user_id"
 // @Produce json
 // @Success 200 {object} response.Success{data=response.User} "用户信息获取成功"
 // @Failure 400 {object} response.Err "请求参数错误"
 // @Router /api/v1/user/getUserInfo [get]
 func (c *UserController) GetUserInfo(ctx *gin.Context) {
-	var req request.GetUserInfo
 
-	// 解析请求体，绑定到结构体
-	if err := ctx.ShouldBindJSON(&req); err != nil {
+	UserID, err := getUserID(ctx)
+	if err != nil {
 		ctx.JSON(http.StatusBadRequest, response.Err{
-			Err: fmt.Errorf("invalid request: %w", err),
+			Err: fmt.Errorf("auth: %w", err),
 		})
 		return
 	}
 
-	user, err := c.userService.GetUserById(ctx, req.UserId)
+	user, err := c.userService.GetUserById(ctx, UserID)
 	if err != nil {
 		ctx.JSON(http.StatusOK, response.Err{
 			Err: fmt.Errorf("GetUserById: %w", err),
@@ -258,7 +256,7 @@ func (c *UserController) GetUserInfo(ctx *gin.Context) {
 		return
 	}
 
-	domain := c.userService.GetDomains(ctx, req.UserId)
+	domain := c.userService.GetDomains(ctx, UserID)
 	ctx.JSON(http.StatusOK, response.Success{
 		Data: response.User{
 			U:      user,
