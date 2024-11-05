@@ -20,8 +20,8 @@ type AppConf struct {
 
 // GitHubConfig 使用统一的cfg管理方案
 type GitHubConfig struct {
-	ClientID     string `yaml:"client-id"`
-	ClientSecret string `yaml:"client-secret"`
+	ClientID     string `yaml:"clientID"`
+	ClientSecret string `yaml:"clientSecret"`
 }
 type DataConfig struct {
 	Addr string `yaml:"addr"`
@@ -33,8 +33,8 @@ type LLMConfig struct {
 }
 
 type JWTConfig struct {
-	SecretKey string `yaml:"secret-key"` //秘钥
-	Timeout   int    `yaml:"timeout"`    //过期时间
+	SecretKey string `yaml:"secretKey"` //秘钥
+	Timeout   int    `yaml:"timeout"`   //过期时间
 }
 
 func NewAppConf(s *VipperSetting) *AppConf {
