@@ -10,6 +10,7 @@ var ProviderSet = wire.NewSet(
 	NewGitHubConfig,
 	NewDataConfig,
 	NewLLMConfig,
+	NewJWTConfig,
 )
 
 type AppConf struct {

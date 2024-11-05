@@ -10,6 +10,7 @@ import (
 	"github.com/GitEval/GitEval-Backend/api/route"
 	"github.com/GitEval/GitEval-Backend/conf"
 	"github.com/GitEval/GitEval-Backend/controller"
+	"github.com/GitEval/GitEval-Backend/middleware"
 	"github.com/GitEval/GitEval-Backend/model"
 	"github.com/GitEval/GitEval-Backend/pkg/github"
 	"github.com/GitEval/GitEval-Backend/pkg/github/expireMap"
@@ -34,9 +35,12 @@ func WireApp(confPath string) (route.App, func()) {
 	llmClient := llm.NewLLMClient(llmConfig)
 	userService := service.NewUserService(gormUserDAO, gormContactDAO, gormDomainDAO, data, gitHubAPI, llmClient)
 	authService := service.NewAuthService(userService, gitHubAPI, llmClient)
-	authController := controller.NewAuthController(authService)
+	jwtConfig := conf.NewJWTConfig(vipperSetting)
+	jwtClient := middleware.NewJWTClient(jwtConfig)
+	authController := controller.NewAuthController(authService, jwtClient)
 	userController := controller.NewUserController(userService)
-	engine := route.NewRouter(authController, userController)
+	middlewareMiddleware := middleware.NewMiddleware(jwtClient)
+	engine := route.NewRouter(authController, userController, middlewareMiddleware)
 	appConf := conf.NewAppConf(vipperSetting)
 	app := route.NewApp(engine, appConf)
 	return app, func() {

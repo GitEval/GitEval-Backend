@@ -1,0 +1,22 @@
+version: "3.7"
+services:
+  db:
+    image: mysql
+    restart: "always"
+    ports:
+      - "1306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "12345678"
+      MYSQL_DATABASE: "GitEval"
+    volumes:
+      - "./db:/var/lib/mysql"
+  GitEval:
+    # 本地镜像
+    image: "giteval:v1"
+    restart: "always"
+    volumes:
+      - "./config/config.yaml:/app/config/config.yaml"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db

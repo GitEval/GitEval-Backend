@@ -13,7 +13,7 @@ WORKDIR /app
 # 复制 be-patent 服务代码
 COPY . .
 
-RUN go mod tidy && go build -o app
+RUN go mod tidy && go build -o gitEval
 
 # 第二阶段：复制编译结果到最终镜像
 FROM alpine
@@ -22,13 +22,11 @@ FROM alpine
 WORKDIR /app
 
 # 从 builder 复制编译好的二进制文件
-COPY --from=builder /app/app /app/app
+COPY --from=builder /app/gitEval /app/gitEval
 
-# 复制配置文件到最终镜像
-COPY --from=builder /app/conf/config.yaml /app/conf/config.yaml
 
 # 开放端口（根据需要设置）
 EXPOSE 8080
 
 # 启动用户服务
-CMD ["./app"]
+CMD ["./gitEval","-conf","conf/config.yaml"]

@@ -10,7 +10,7 @@ type Err struct {
 	Err error `json:"error"`
 }
 type CallBack struct {
-	UserId int64 `json:"user_id"`
+	Token string `json:"token"`
 }
 
 type User struct {

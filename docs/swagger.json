@@ -34,7 +34,7 @@
                                 {
                                     "type": "object",
                                     "properties": {
-                                        "Data": {
+                                        "data": {
                                             "$ref": "#/definitions/response.CallBack"
                                         }
                                     }
@@ -66,15 +66,6 @@
                     "User"
                 ],
                 "summary": "根据用户 ID 获取用户的领域",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "用户ID, 暂时没写 JWT 和 cookie 之类的, 所以直接传 user_id",
-                        "name": "user_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "领域获取成功",
@@ -86,7 +77,7 @@
                                 {
                                     "type": "object",
                                     "properties": {
-                                        "Data": {
+                                        "data": {
                                             "$ref": "#/definitions/response.DomainResp"
                                         }
                                     }
@@ -118,15 +109,6 @@
                     "User"
                 ],
                 "summary": "根据userid获取用户评价",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "用户ID,暂时没写jwt和cookie之类的,所以直接传user_id",
-                        "name": "user_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "登录成功",
@@ -138,7 +120,7 @@
                                 {
                                     "type": "object",
                                     "properties": {
-                                        "Data": {
+                                        "data": {
                                             "$ref": "#/definitions/response.EvaluationResp"
                                         }
                                     }
@@ -164,15 +146,6 @@
                     "User"
                 ],
                 "summary": "从userid获取用户",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "用户ID,暂时没写jwt和cookie之类的,所以直接传user_id",
-                        "name": "user_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "登录成功",
@@ -184,7 +157,7 @@
                                 {
                                     "type": "object",
                                     "properties": {
-                                        "Data": {
+                                        "data": {
                                             "$ref": "#/definitions/response.User"
                                         }
                                     }
@@ -210,15 +183,6 @@
                     "User"
                 ],
                 "summary": "根据用户 ID 获取用户所在国家",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "用户ID, 暂时没写 JWT 和 cookie 之类的, 所以直接传 user_id",
-                        "name": "user_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "国家获取成功",
@@ -230,7 +194,7 @@
                                 {
                                     "type": "object",
                                     "properties": {
-                                        "Data": {
+                                        "data": {
                                             "$ref": "#/definitions/response.NationResp"
                                         }
                                     }
@@ -262,15 +226,6 @@
                     "User"
                 ],
                 "summary": "根据userid获取用户的score的排行榜",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "用户ID,暂时没写jwt和cookie之类的,所以直接传user_id",
-                        "name": "user_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "登录成功",
@@ -282,7 +237,7 @@
                                 {
                                     "type": "object",
                                     "properties": {
-                                        "Data": {
+                                        "data": {
                                             "$ref": "#/definitions/response.Ranking"
                                         }
                                     }
@@ -345,7 +300,7 @@
                                 {
                                     "type": "object",
                                     "properties": {
-                                        "Data": {
+                                        "data": {
                                             "$ref": "#/definitions/response.SearchResp"
                                         }
                                     }
@@ -456,8 +411,8 @@
         "response.CallBack": {
             "type": "object",
             "properties": {
-                "user_id": {
-                    "type": "integer"
+                "token": {
+                    "type": "string"
                 }
             }
         },

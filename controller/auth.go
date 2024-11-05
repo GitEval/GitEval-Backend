@@ -12,13 +12,20 @@ type AuthServiceProxy interface {
 	Login(ctx context.Context) (url string, err error)
 	CallBack(ctx context.Context, code string) (userId int64, err error)
 }
+type GenerateJWTer interface {
+	GenerateToken(userId int64) (string, error)
+}
 
 type AuthController struct {
 	authService AuthServiceProxy
+	jwt         GenerateJWTer
 }
 
-func NewAuthController(authService AuthServiceProxy) *AuthController {
-	return &AuthController{authService: authService}
+func NewAuthController(authService AuthServiceProxy, jwt GenerateJWTer) *AuthController {
+	return &AuthController{
+		authService: authService,
+		jwt:         jwt,
+	}
 }
 
 // Login 用户登录
@@ -50,7 +57,7 @@ func (c *AuthController) Login(ctx *gin.Context) {
 // @Tags Auth
 // @Param code query string true "github重定向的code"
 // @Produce json
-// @Success 200 {object} response.Success{Data=response.CallBack} "初始化成功!"
+// @Success 200 {object} response.Success{data=response.CallBack} "初始化成功!"
 // @Failure 400 {object} response.Err "请求参数错误"
 // @Failure 500 {object} response.Err "内部错误"
 // @Router /api/v1/auth/login [get]
@@ -67,10 +74,14 @@ func (c *AuthController) CallBack(ctx *gin.Context) {
 	if err != nil {
 		return
 	}
-
+	token, err := c.jwt.GenerateToken(userid)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, response.Err{Err: err})
+		return
+	}
 	ctx.JSON(http.StatusOK, response.Success{
 		Data: response.CallBack{
-			UserId: userid,
+			Token: token,
 		},
 		Msg: "success",
 	})

@@ -9,6 +9,7 @@ import (
 	"github.com/GitEval/GitEval-Backend/api/route"
 	"github.com/GitEval/GitEval-Backend/conf"
 	"github.com/GitEval/GitEval-Backend/controller"
+	"github.com/GitEval/GitEval-Backend/middleware"
 	"github.com/GitEval/GitEval-Backend/model"
 	"github.com/GitEval/GitEval-Backend/pkg"
 	"github.com/GitEval/GitEval-Backend/pkg/github"
@@ -25,9 +26,12 @@ func WireApp(confPath string) (route.App, func()) {
 		service.ProviderSet,
 		controller.ProviderSet,
 		pkg.ProviderSet,
+		middleware.ProviderSet,
+		wire.Bind(new(middleware.ParTokener), new(*middleware.JWTClient)),
 		wire.Bind(new(route.AuthControllerProxy), new(*controller.AuthController)),
 		wire.Bind(new(route.UserControllerProxy), new(*controller.UserController)),
 		wire.Bind(new(controller.UserServiceProxy), new(*service.UserService)),
+		wire.Bind(new(controller.GenerateJWTer), new(*middleware.JWTClient)),
 		wire.Bind(new(controller.AuthServiceProxy), new(*service.AuthService)),
 		wire.Bind(new(service.GitHubAPIProxy), new(*github.GitHubAPI)),
 		wire.Bind(new(service.LLMClientProxy), new(*llm.LLMClient)),

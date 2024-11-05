@@ -65,8 +65,8 @@ definitions:
     type: object
   response.CallBack:
     properties:
-      user_id:
-        type: integer
+      token:
+        type: string
     type: object
   response.DomainResp:
     properties:
@@ -139,7 +139,7 @@ paths:
             allOf:
             - $ref: '#/definitions/response.Success'
             - properties:
-                Data:
+                data:
                   $ref: '#/definitions/response.CallBack'
               type: object
         "400":
@@ -155,12 +155,6 @@ paths:
       - Auth
   /api/v1/user/getDomain:
     get:
-      parameters:
-      - description: 用户ID, 暂时没写 JWT 和 cookie 之类的, 所以直接传 user_id
-        in: query
-        name: user_id
-        required: true
-        type: string
       produces:
       - application/json
       responses:
@@ -170,7 +164,7 @@ paths:
             allOf:
             - $ref: '#/definitions/response.Success'
             - properties:
-                Data:
+                data:
                   $ref: '#/definitions/response.DomainResp'
               type: object
         "400":
@@ -186,12 +180,6 @@ paths:
       - User
   /api/v1/user/getEvaluation:
     get:
-      parameters:
-      - description: 用户ID,暂时没写jwt和cookie之类的,所以直接传user_id
-        in: query
-        name: user_id
-        required: true
-        type: string
       produces:
       - application/json
       responses:
@@ -201,7 +189,7 @@ paths:
             allOf:
             - $ref: '#/definitions/response.Success'
             - properties:
-                Data:
+                data:
                   $ref: '#/definitions/response.EvaluationResp'
               type: object
         "400":
@@ -213,12 +201,6 @@ paths:
       - User
   /api/v1/user/getInfo:
     get:
-      parameters:
-      - description: 用户ID,暂时没写jwt和cookie之类的,所以直接传user_id
-        in: query
-        name: user_id
-        required: true
-        type: string
       produces:
       - application/json
       responses:
@@ -228,7 +210,7 @@ paths:
             allOf:
             - $ref: '#/definitions/response.Success'
             - properties:
-                Data:
+                data:
                   $ref: '#/definitions/response.User'
               type: object
         "400":
@@ -240,12 +222,6 @@ paths:
       - User
   /api/v1/user/getNation:
     get:
-      parameters:
-      - description: 用户ID, 暂时没写 JWT 和 cookie 之类的, 所以直接传 user_id
-        in: query
-        name: user_id
-        required: true
-        type: string
       produces:
       - application/json
       responses:
@@ -255,7 +231,7 @@ paths:
             allOf:
             - $ref: '#/definitions/response.Success'
             - properties:
-                Data:
+                data:
                   $ref: '#/definitions/response.NationResp'
               type: object
         "400":
@@ -271,12 +247,6 @@ paths:
       - User
   /api/v1/user/getRank:
     get:
-      parameters:
-      - description: 用户ID,暂时没写jwt和cookie之类的,所以直接传user_id
-        in: query
-        name: user_id
-        required: true
-        type: string
       produces:
       - application/json
       responses:
@@ -286,7 +256,7 @@ paths:
             allOf:
             - $ref: '#/definitions/response.Success'
             - properties:
-                Data:
+                data:
                   $ref: '#/definitions/response.Ranking'
               type: object
         "400":
@@ -324,7 +294,7 @@ paths:
             allOf:
             - $ref: '#/definitions/response.Success'
             - properties:
-                Data:
+                data:
                   $ref: '#/definitions/response.SearchResp'
               type: object
         "400":

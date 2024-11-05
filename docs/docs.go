@@ -45,7 +45,7 @@ const docTemplate = `{
                                 {
                                     "type": "object",
                                     "properties": {
-                                        "Data": {
+                                        "data": {
                                             "$ref": "#/definitions/response.CallBack"
                                         }
                                     }
@@ -77,15 +77,6 @@ const docTemplate = `{
                     "User"
                 ],
                 "summary": "根据用户 ID 获取用户的领域",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "用户ID, 暂时没写 JWT 和 cookie 之类的, 所以直接传 user_id",
-                        "name": "user_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "领域获取成功",
@@ -97,7 +88,7 @@ const docTemplate = `{
                                 {
                                     "type": "object",
                                     "properties": {
-                                        "Data": {
+                                        "data": {
                                             "$ref": "#/definitions/response.DomainResp"
                                         }
                                     }
@@ -129,15 +120,6 @@ const docTemplate = `{
                     "User"
                 ],
                 "summary": "根据userid获取用户评价",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "用户ID,暂时没写jwt和cookie之类的,所以直接传user_id",
-                        "name": "user_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "登录成功",
@@ -149,7 +131,7 @@ const docTemplate = `{
                                 {
                                     "type": "object",
                                     "properties": {
-                                        "Data": {
+                                        "data": {
                                             "$ref": "#/definitions/response.EvaluationResp"
                                         }
                                     }
@@ -175,15 +157,6 @@ const docTemplate = `{
                     "User"
                 ],
                 "summary": "从userid获取用户",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "用户ID,暂时没写jwt和cookie之类的,所以直接传user_id",
-                        "name": "user_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "登录成功",
@@ -195,7 +168,7 @@ const docTemplate = `{
                                 {
                                     "type": "object",
                                     "properties": {
-                                        "Data": {
+                                        "data": {
                                             "$ref": "#/definitions/response.User"
                                         }
                                     }
@@ -221,15 +194,6 @@ const docTemplate = `{
                     "User"
                 ],
                 "summary": "根据用户 ID 获取用户所在国家",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "用户ID, 暂时没写 JWT 和 cookie 之类的, 所以直接传 user_id",
-                        "name": "user_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "国家获取成功",
@@ -241,7 +205,7 @@ const docTemplate = `{
                                 {
                                     "type": "object",
                                     "properties": {
-                                        "Data": {
+                                        "data": {
                                             "$ref": "#/definitions/response.NationResp"
                                         }
                                     }
@@ -273,15 +237,6 @@ const docTemplate = `{
                     "User"
                 ],
                 "summary": "根据userid获取用户的score的排行榜",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "用户ID,暂时没写jwt和cookie之类的,所以直接传user_id",
-                        "name": "user_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "登录成功",
@@ -293,7 +248,7 @@ const docTemplate = `{
                                 {
                                     "type": "object",
                                     "properties": {
-                                        "Data": {
+                                        "data": {
                                             "$ref": "#/definitions/response.Ranking"
                                         }
                                     }
@@ -356,7 +311,7 @@ const docTemplate = `{
                                 {
                                     "type": "object",
                                     "properties": {
-                                        "Data": {
+                                        "data": {
                                             "$ref": "#/definitions/response.SearchResp"
                                         }
                                     }
@@ -467,8 +422,8 @@ const docTemplate = `{
         "response.CallBack": {
             "type": "object",
             "properties": {
-                "user_id": {
-                    "type": "integer"
+                "token": {
+                    "type": "string"
                 }
             }
         },

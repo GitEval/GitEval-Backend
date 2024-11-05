@@ -2,6 +2,7 @@ package route
 
 import (
 	"github.com/GitEval/GitEval-Backend/conf"
+	"github.com/GitEval/GitEval-Backend/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
 )
@@ -41,7 +42,7 @@ type UserControllerProxy interface {
 	SearchUser(ctx *gin.Context)
 }
 
-func NewRouter(authController AuthControllerProxy, userController UserControllerProxy) *gin.Engine {
+func NewRouter(authController AuthControllerProxy, userController UserControllerProxy, m *middleware.Middleware) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
@@ -53,12 +54,12 @@ func NewRouter(authController AuthControllerProxy, userController UserController
 
 	//用户服务
 	userGroup := g.Group("/user")
-	userGroup.GET("/getInfo", userController.GetUser)
-	userGroup.GET("/getRank", userController.GetRanking)
-	userGroup.GET("/getEvaluation", userController.GetEvaluation)
-	userGroup.GET("/getNation", userController.GetNation)
-	userGroup.GET("/getDomain", userController.GetDomain)
-	userGroup.GET("/search", userController.SearchUser)
+	userGroup.GET("/getInfo", m.AuthMiddleware(), userController.GetUser)
+	userGroup.GET("/getRank", m.AuthMiddleware(), userController.GetRanking)
+	userGroup.GET("/getEvaluation", m.AuthMiddleware(), userController.GetEvaluation)
+	userGroup.GET("/getNation", m.AuthMiddleware(), userController.GetNation)
+	userGroup.GET("/getDomain", m.AuthMiddleware(), userController.GetDomain)
+	userGroup.GET("/search", m.AuthMiddleware(), userController.SearchUser)
 
 	//后续的接口应该用group来管理
 	//例如:

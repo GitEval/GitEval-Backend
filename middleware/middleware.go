@@ -1,12 +1,27 @@
 package middleware
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/google/wire"
 	"net/http"
 )
 
+var ProviderSet = wire.NewSet(NewMiddleware, NewJWTClient)
+
+type ParTokener interface {
+	ParseToken(tokenString string) (int64, error)
+}
+type Middleware struct {
+	jwt ParTokener
+}
+
+func NewMiddleware(jwt ParTokener) *Middleware {
+	return &Middleware{jwt}
+}
+
 // AuthMiddleware 从请求头中获取认证信息并解析出 user_id
-func AuthMiddleware() gin.HandlerFunc {
+func (m *Middleware) AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 获取 Authorization 请求头
 		authHeader := c.GetHeader("Authorization")
@@ -17,9 +32,9 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		//解析jwt
-		userID, err := ParseToken(authHeader)
+		userID, err := m.jwt.ParseToken(authHeader)
 		if err != nil || userID == 0 {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": fmt.Errorf("parse token : %w", err)})
 		}
 
 		// 将 user_id 存储到上下文中
