@@ -36,6 +36,8 @@ func (m *Middleware) AuthMiddleware() gin.HandlerFunc {
 		userID, err := m.jwt.ParseToken(authHeader)
 		if err != nil || userID == 0 {
 			c.JSON(http.StatusUnauthorized, response.Err{Err: err})
+			c.Abort()
+			return
 		}
 
 		// 将 user_id 存储到上下文中

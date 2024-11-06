@@ -55,6 +55,16 @@ func (c *JWTClient) ParseToken(tokenString string) (int64, error) {
 	if err != nil || !token.Valid {
 		return 0, err
 	}
+
+	// 检查 JWT 是否在黑名单中
+	isBlacklisted, err := c.IsTokenBlacklisted(claims.Id)
+	if err != nil {
+		return 0, err
+	}
+
+	if isBlacklisted {
+		return 0, errors.New("token is blacklisted")
+	}
 	// 转换为 int64
 	userId, err := strconv.ParseInt(claims.Subject, 10, 64)
 	if err != nil {
@@ -91,6 +101,16 @@ func (c *JWTClient) BlackJWT(ctx *gin.Context) {
 		ctx.Abort()
 		return
 	}
-
+	ctx.JSON(http.StatusOK, response.Success{Msg: "logout success"})
 	return
+}
+
+// IsTokenBlacklisted 检查 JWT 是否在黑名单中
+func (c *JWTClient) IsTokenBlacklisted(jti string) (bool, error) {
+	// 查询 Redis 中是否存在该 jti
+	blacklisted, err := c.redisCache.CheckBlacklist(jti)
+	if err != nil {
+		return false, err
+	}
+	return blacklisted, nil
 }

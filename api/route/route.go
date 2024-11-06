@@ -34,6 +34,7 @@ func (a *App) Run() {
 type AuthControllerProxy interface {
 	Login(ctx *gin.Context)
 	CallBack(ctx *gin.Context)
+	Logout(ctx *gin.Context)
 }
 type UserControllerProxy interface {
 	GetUser(ctx *gin.Context)
@@ -57,7 +58,7 @@ func NewRouter(authController AuthControllerProxy, userController UserController
 	authGroup := g.Group("/auth")
 	authGroup.GET("/login", authController.Login)
 	authGroup.GET("/callBack", authController.CallBack)
-	authGroup.GET("/logout", authController.Login)
+	authGroup.GET("/logout", m.AuthMiddleware(), authController.Logout)
 
 	//用户服务
 	userGroup := g.Group("/user")
