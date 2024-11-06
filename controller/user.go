@@ -19,7 +19,7 @@ type UserServiceProxy interface {
 	GetEvaluation(ctx context.Context, userId int64) (string, error)
 	GetNationByUserId(ctx context.Context, userId int64) (string, error)
 	GetDomainByUserId(ctx context.Context, userId int64) ([]string, error)
-	SearchUser(ctx context.Context, nation, domain string, page int, pageSize int) ([]model.User, error)
+	SearchUser(ctx context.Context, nation *string, domain string, page int, pageSize int) ([]model.User, error)
 }
 type UserController struct {
 	userService UserServiceProxy
@@ -61,6 +61,7 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 		},
 		Msg: "success",
 	})
+	return
 }
 
 // GetRanking 获取用户排行(和自己的好友之间的
@@ -86,7 +87,9 @@ func (c *UserController) GetRanking(ctx *gin.Context) {
 		})
 		return
 	}
+
 	ctx.JSON(http.StatusOK, response.Success{Data: response.Ranking{Leaderboard: rankings}, Msg: "success"})
+	return
 }
 
 // GetEvaluation 获取用户评价
@@ -106,21 +109,14 @@ func (c *UserController) GetEvaluation(ctx *gin.Context) {
 	}
 
 	evaluation, err := c.userService.GetEvaluation(ctx, UserID)
-	switch err {
-	case errs.LoginFailErr:
-		//返回一个重定向的状态码,让前端做重定向,因为后端得不到实际的ip,我暂时只对这里进行了处理,看看cc有没有更好的想法
-		ctx.JSON(http.StatusFound, response.Err{
-			Err: fmt.Errorf("GetEvaluation: %w", err),
-		})
-		return
-	case nil:
-		ctx.JSON(http.StatusOK, response.Success{Data: response.EvaluationResp{Evaluation: evaluation}, Msg: "success"})
-	default:
-		ctx.JSON(http.StatusOK, response.Err{
-			Err: fmt.Errorf("GetEvaluation: %w", err),
-		})
+	if err != nil {
+		ctx.JSON(http.StatusOK, response.Err{Err: fmt.Errorf("GetEvaluation: %w", err)})
 		return
 	}
+
+	ctx.JSON(http.StatusOK, response.Success{Data: response.EvaluationResp{Evaluation: evaluation}, Msg: "success"})
+	return
+
 }
 
 // GetNation 获取用户所在国家
@@ -141,21 +137,14 @@ func (c *UserController) GetNation(ctx *gin.Context) {
 	}
 
 	nation, err := c.userService.GetNationByUserId(ctx, UserID)
-	switch err {
-	case errs.LoginFailErr:
-		//返回一个重定向的状态码,让前端做重定向,因为后端得不到实际的ip,我暂时只对这里进行了处理,看看cc有没有更好的想法
-		ctx.JSON(http.StatusFound, response.Err{
-			Err: fmt.Errorf("GetDomain: %w", err),
-		})
-		return
-	case nil:
-		ctx.JSON(http.StatusOK, response.Success{Data: response.NationResp{Nation: nation}, Msg: "success"})
-	default:
-		ctx.JSON(http.StatusOK, response.Err{
-			Err: fmt.Errorf("GetDomain: %w", err),
-		})
+	if err != nil {
+		ctx.JSON(http.StatusOK, response.Err{Err: fmt.Errorf("GetNation: %w", err)})
 		return
 	}
+	ctx.JSON(http.StatusOK, response.Success{Data: response.NationResp{Nation: nation}, Msg: "success"})
+
+	return
+
 }
 
 // GetDomain 获取用户的领域
@@ -176,30 +165,21 @@ func (c *UserController) GetDomain(ctx *gin.Context) {
 	}
 
 	domain, err := c.userService.GetDomainByUserId(ctx, UserID)
-	switch err {
-	case errs.LoginFailErr:
-		//返回一个重定向的状态码,让前端做重定向,因为后端得不到实际的ip,我暂时只对这里进行了处理,看看cc有没有更好的想法
-		ctx.JSON(http.StatusFound, response.Err{
-			Err: fmt.Errorf("GetDomain: %w", err),
-		})
-		return
-	case nil:
-		ctx.JSON(http.StatusOK, response.Success{Data: response.DomainResp{Domain: domain}, Msg: "success"})
-	default:
-		ctx.JSON(http.StatusOK, response.Err{
-			Err: fmt.Errorf("GetDomain: %w", err),
-		})
+	if err != nil {
+		ctx.JSON(http.StatusOK, response.Err{Err: fmt.Errorf("GetDomain: %w", err)})
 		return
 	}
+	ctx.JSON(http.StatusOK, response.Success{Data: response.DomainResp{Domain: domain}, Msg: "success"})
+	return
 }
 
 // SearchUser 根据国家和领域搜索用户
 // @Summary 根据国家和领域搜索用户
 // @Tags User
 // @Param nation query string false "国家，选择性参数"
-// @Param domain query string false "领域，选择性参数"
-// @Param page query int false "分页参数表示这是第几页"
-// @Param page_size query int false "每页返回的用户数量，建议一次返回10个"
+// @Param domain query string true "领域，选择性参数"
+// @Param page query int true "分页参数表示这是第几页"
+// @Param page_size query int true "每页返回的用户数量，建议一次返回10个"
 // @Produce json
 // @Success 200 {object} response.Success{data=response.SearchResp} "用户搜索成功"
 // @Failure 400 {object} response.Err "请求参数错误"

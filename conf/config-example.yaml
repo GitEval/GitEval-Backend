@@ -11,3 +11,6 @@ llm:
 jwt:
   secretKey: "giteval"
   timeout: 300
+cache:
+  addr: "localhost:6379"
+  password: "123"

@@ -1,7 +1,8 @@
 package middleware
 
 import (
-	"fmt"
+	"errors"
+	"github.com/GitEval/GitEval-Backend/api/response"
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
 	"net/http"
@@ -26,7 +27,7 @@ func (m *Middleware) AuthMiddleware() gin.HandlerFunc {
 		// 获取 Authorization 请求头
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header is missing"})
+			c.JSON(http.StatusUnauthorized, response.Err{Err: errors.New("Authorization header is empty.")})
 			c.Abort()
 			return
 		}
@@ -34,7 +35,7 @@ func (m *Middleware) AuthMiddleware() gin.HandlerFunc {
 		//解析jwt
 		userID, err := m.jwt.ParseToken(authHeader)
 		if err != nil || userID == 0 {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": fmt.Errorf("parse token : %w", err)})
+			c.JSON(http.StatusUnauthorized, response.Err{Err: err})
 		}
 
 		// 将 user_id 存储到上下文中

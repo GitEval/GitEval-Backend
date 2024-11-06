@@ -12,6 +12,7 @@ import (
 	"github.com/GitEval/GitEval-Backend/controller"
 	"github.com/GitEval/GitEval-Backend/middleware"
 	"github.com/GitEval/GitEval-Backend/model"
+	"github.com/GitEval/GitEval-Backend/model/cache"
 	"github.com/GitEval/GitEval-Backend/pkg"
 	"github.com/GitEval/GitEval-Backend/pkg/github"
 	"github.com/GitEval/GitEval-Backend/service"
@@ -20,6 +21,7 @@ import (
 
 func WireApp(confPath string) (route.App, func()) {
 	panic(wire.Build(
+		cache.ProviderSet,
 		conf.ProviderSet,
 		route.ProviderSet,
 		model.ProviderSet,

@@ -9,5 +9,4 @@ import (
 var ProviderSet = wire.NewSet(
 	github.NewGitHubAPI,
 	expireMap.NewExpireMap, //github
-	//llm.NewLLMClient,       //llm
 )

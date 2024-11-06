@@ -93,19 +93,24 @@ func (o *GormUserDAO) SaveUser(ctx context.Context, user User) error {
 	return nil
 }
 
-func (o *GormUserDAO) SearchUser(ctx context.Context, nation, domain string, page int, pageSize int) (users []User, err error) {
+func (o *GormUserDAO) SearchUser(ctx context.Context, nation *string, domain string, page int, pageSize int) (users []User, err error) {
 	db := o.data.Mysql.WithContext(ctx)
 
-	// 这里用 LIKE 来查找 nation 字段在 '|' 之前与传入的 nation 相匹配,domain也使用相同的方法进行模糊匹配
-	err = db.Select("DISTINCT users.*").
+	// 基础查询：联合查询用户和域名，按域名和分数排序,这里使用|进行划分
+	query := db.Select("DISTINCT users.*").
 		Joins("JOIN domain ON domain.user_id = users.id").
 		Where("SUBSTRING_INDEX(domain.domain, '|', 1) = ?", domain).
-		Where("SUBSTRING_INDEX(users.nationality, '|', 1) = ?", nation).
-		Order("users.score DESC").     // 按照 score 字段从高到低排序
-		Offset((page - 1) * pageSize). // 分页
-		Limit(pageSize).               // 设置每页大小
-		Find(&users).Error
+		Order("users.score DESC").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize)
 
+	// 如果 nation 不为 nil，添加国家筛选条件
+	if nation != nil {
+		query = query.Where("SUBSTRING_INDEX(users.nationality, '|', 1) = ?", *nation)
+	}
+
+	// 执行查询
+	err = query.Find(&users).Error
 	if err != nil {
 		log.Println("Error getting followers users:", err)
 		return nil, err

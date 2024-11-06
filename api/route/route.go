@@ -57,6 +57,7 @@ func NewRouter(authController AuthControllerProxy, userController UserController
 	authGroup := g.Group("/auth")
 	authGroup.GET("/login", authController.Login)
 	authGroup.GET("/callBack", authController.CallBack)
+	authGroup.GET("/logout", authController.Login)
 
 	//用户服务
 	userGroup := g.Group("/user")
@@ -67,6 +68,7 @@ func NewRouter(authController AuthControllerProxy, userController UserController
 	userGroup.GET("/getDomain", m.AuthMiddleware(), userController.GetDomain)
 	userGroup.GET("/search", m.AuthMiddleware(), userController.SearchUser)
 	userGroup.GET("/getUserInfo", m.AuthMiddleware(), userController.GetUserInfo)
+
 	return r
 }
 

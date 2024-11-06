@@ -9,6 +9,7 @@ var (
 func init() {
 	flag.StringVar(&flagconf, "conf", "conf/config.yaml", "config path, eg: -conf conf/config.yaml")
 }
+
 func main() {
 	flag.Parse()
 	app, clean := WireApp(flagconf)

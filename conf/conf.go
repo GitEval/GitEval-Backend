@@ -11,6 +11,7 @@ var ProviderSet = wire.NewSet(
 	NewDataConfig,
 	NewLLMConfig,
 	NewJWTConfig,
+	NewCacheConfig,
 )
 
 type AppConf struct {
@@ -35,6 +36,10 @@ type LLMConfig struct {
 type JWTConfig struct {
 	SecretKey string `yaml:"secretKey"` //秘钥
 	Timeout   int    `yaml:"timeout"`   //过期时间
+}
+type CacheConf struct {
+	Addr     string `yaml:"addr"`
+	Password string `yaml:"password"`
 }
 
 func NewAppConf(s *VipperSetting) *AppConf {
@@ -62,4 +67,10 @@ func NewJWTConfig(s *VipperSetting) *JWTConfig {
 	var jwtConf = &JWTConfig{}
 	s.ReadSection("jwt", jwtConf)
 	return jwtConf
+}
+
+func NewCacheConfig(s *VipperSetting) *CacheConf {
+	var cacheConf = &CacheConf{}
+	s.ReadSection("cache", cacheConf)
+	return cacheConf
 }

@@ -12,8 +12,10 @@ type AuthServiceProxy interface {
 	Login(ctx context.Context) (url string, err error)
 	CallBack(ctx context.Context, code string) (userId int64, err error)
 }
+
 type GenerateJWTer interface {
 	GenerateToken(userId int64) (string, error)
+	BlackJWT(ctx *gin.Context)
 }
 
 type AuthController struct {
@@ -73,6 +75,7 @@ func (c *AuthController) CallBack(ctx *gin.Context) {
 	if err != nil {
 		return
 	}
+
 	token, err := c.jwt.GenerateToken(userid)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, response.Err{Err: err})
@@ -87,8 +90,16 @@ func (c *AuthController) CallBack(ctx *gin.Context) {
 	return
 }
 
-func (c *AuthController) Logout(ctx *gin.Context) error {
-	//待完成...我觉得能改成jwt就很好了....
-	//删除用户的当前jwt并将对应当前jwt列入黑名单
-	return nil
+// Logout 登出接口
+// @Summary 登出
+// @Description 登出之后会把jwt加到黑名单里面去
+// @Tags Auth
+// @Produce json
+// @Success 200 {object} response.Success "登出成功!"
+// @Failure 400 {object} response.Err "请求参数错误"
+// @Failure 500 {object} response.Err "内部错误"
+// @Router /api/v1/auth/logout [get]
+func (c *AuthController) Logout(ctx *gin.Context) {
+	c.jwt.BlackJWT(ctx)
+	return
 }

@@ -8,7 +8,6 @@ import (
 	llmv1 "github.com/GitEval/GitEval-Backend/client/gen"
 	"github.com/GitEval/GitEval-Backend/errs"
 	"github.com/GitEval/GitEval-Backend/model"
-	"github.com/GitEval/GitEval-Backend/pkg/llm"
 	"github.com/google/go-github/v50/github"
 	"log"
 	"sort"
@@ -27,7 +26,7 @@ type UserDAOProxy interface {
 	SaveUser(ctx context.Context, user model.User) error
 	GetFollowingUsersJoinContact(ctx context.Context, id int64) ([]model.User, error)
 	GetFollowersUsersJoinContact(ctx context.Context, id int64) ([]model.User, error)
-	SearchUser(ctx context.Context, nation, domain string, page int, pageSize int) ([]model.User, error)
+	SearchUser(ctx context.Context, nation *string, domain string, page int, pageSize int) ([]model.User, error)
 }
 
 type ContactDAOProxy interface {
@@ -35,11 +34,13 @@ type ContactDAOProxy interface {
 	GetCountOfFollowers(ctx context.Context, id int64) (int64, error)
 	CreateContacts(ctx context.Context, contacts []model.FollowingContact) error
 }
+
 type DomainDAOProxy interface {
 	Create(ctx context.Context, domain []model.Domain) error
 	GetDomainById(ctx context.Context, id int64) ([]string, error)
 	Delete(ctx context.Context, id int64) error
 }
+
 type GithubProxy interface {
 	GetFollowing(ctx context.Context, id int64) []model.User
 	GetFollowers(ctx context.Context, id int64) []model.User
@@ -48,7 +49,6 @@ type GithubProxy interface {
 	GetClientFromMap(userID int64) (*github.Client, bool)
 	GetAllUserEvents(ctx context.Context, username string, client *github.Client) ([]model.UserEvent, error)
 }
-
 
 type UserService struct {
 	user    UserDAOProxy
@@ -351,7 +351,7 @@ func (s *UserService) GetDomainByUserId(ctx context.Context, userId int64) ([]st
 
 }
 
-func (s *UserService) SearchUser(ctx context.Context, nation, domain string, page int, pageSize int) ([]model.User, error) {
+func (s *UserService) SearchUser(ctx context.Context, nation *string, domain string, page int, pageSize int) ([]model.User, error) {
 	return s.user.SearchUser(ctx, nation, domain, page, pageSize)
 }
 

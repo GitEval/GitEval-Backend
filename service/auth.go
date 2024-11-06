@@ -16,12 +16,6 @@ type GitHubAPIProxy interface {
 	GetUserInfo(ctx context.Context, client *github.Client, username string) (*github.User, error)
 }
 
-// LLMClientProxy 接口定义
-//type LLMClientProxy interface {
-//	GetDomain(ctx context.Context, req llm.GetDomainRequest) (llm.GetDomainResponse, error)
-//	GetEvaluation(ctx context.Context, req llm.GetEvaluationRequest) (llm.GetEvaluationResponse, error)
-//}
-
 type UserServiceProxy interface {
 	InitUser(ctx context.Context, u model.User) (err error)
 	GetUserById(ctx context.Context, id int64) (model.User, error)

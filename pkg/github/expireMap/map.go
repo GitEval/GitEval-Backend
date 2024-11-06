@@ -29,6 +29,7 @@ func NewExpireMap() (ExpireMap, func()) {
 		e.Clean()
 	}
 }
+
 func (e *ExpireMap) Store(key int64, value any, expire time.Duration) {
 	e.mp1.Store(getKey(key), value)
 	e.mp2.Store(getExpireKey(key), time.Now().Add(expire))

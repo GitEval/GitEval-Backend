@@ -174,6 +174,27 @@ paths:
       summary: github用户登录授权接口
       tags:
       - Auth
+  /api/v1/auth/logout:
+    get:
+      description: 登出之后会把jwt加到黑名单里面去
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登出成功!
+          schema:
+            $ref: '#/definitions/response.Success'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Err'
+        "500":
+          description: 内部错误
+          schema:
+            $ref: '#/definitions/response.Err'
+      summary: 登出
+      tags:
+      - Auth
   /api/v1/user/getDomain:
     get:
       produces:
@@ -324,14 +345,17 @@ paths:
       - description: 领域，选择性参数
         in: query
         name: domain
+        required: true
         type: string
       - description: 分页参数表示这是第几页
         in: query
         name: page
+        required: true
         type: integer
       - description: 每页返回的用户数量，建议一次返回10个
         in: query
         name: page_size
+        required: true
         type: integer
       produces:
       - application/json
