@@ -8,13 +8,13 @@ package main
 
 import (
 	"github.com/GitEval/GitEval-Backend/api/route"
+	"github.com/GitEval/GitEval-Backend/client"
 	"github.com/GitEval/GitEval-Backend/conf"
 	"github.com/GitEval/GitEval-Backend/controller"
 	"github.com/GitEval/GitEval-Backend/middleware"
 	"github.com/GitEval/GitEval-Backend/model"
 	"github.com/GitEval/GitEval-Backend/pkg/github"
 	"github.com/GitEval/GitEval-Backend/pkg/github/expireMap"
-	"github.com/GitEval/GitEval-Backend/pkg/llm"
 	"github.com/GitEval/GitEval-Backend/service"
 )
 
@@ -32,9 +32,9 @@ func WireApp(confPath string) (route.App, func()) {
 	expireMapExpireMap, cleanup := expireMap.NewExpireMap()
 	gitHubAPI := github.NewGitHubAPI(gitHubConfig, expireMapExpireMap)
 	llmConfig := conf.NewLLMConfig(vipperSetting)
-	llmClient := llm.NewLLMClient(llmConfig)
-	userService := service.NewUserService(gormUserDAO, gormContactDAO, gormDomainDAO, data, gitHubAPI, llmClient)
-	authService := service.NewAuthService(userService, gitHubAPI, llmClient)
+	llmServiceClient := client.NewLLMClient(llmConfig)
+	userService := service.NewUserService(gormUserDAO, gormContactDAO, gormDomainDAO, data, gitHubAPI, llmServiceClient)
+	authService := service.NewAuthService(userService, gitHubAPI, llmServiceClient)
 	jwtConfig := conf.NewJWTConfig(vipperSetting)
 	jwtClient := middleware.NewJWTClient(jwtConfig)
 	authController := controller.NewAuthController(authService, jwtClient)

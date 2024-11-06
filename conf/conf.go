@@ -14,7 +14,7 @@ var ProviderSet = wire.NewSet(
 )
 
 type AppConf struct {
-	Addr string `json:"addr"`
+	Addr string `yaml:"addr"`
 	//其他配置也可以加到这个里面
 }
 

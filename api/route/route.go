@@ -46,6 +46,7 @@ type UserControllerProxy interface {
 }
 
 func NewRouter(authController AuthControllerProxy, userController UserControllerProxy, m *middleware.Middleware) *gin.Engine {
+
 	r := gin.New()
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())

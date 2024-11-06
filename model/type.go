@@ -1,18 +1,18 @@
 package model
 
 type RepoInfo struct {
-	Name             *string `json:"name"` // 仓库名称
-	Description      *string `json:"description"`
-	StargazersCount  *int    `json:"stargazers_count"`
-	ForksCount       *int    `json:"forks_count"`
-	CreatedAt        *string `json:"created_at"`
-	SubscribersCount *int    `json:"subscribers_count"`
+	Name             string `json:"name"` // 仓库名称
+	Description      string `json:"description"`
+	StargazersCount  int    `json:"stargazers_count"`
+	ForksCount       int    `json:"forks_count"`
+	CreatedAt        string `json:"created_at"`
+	SubscribersCount int    `json:"subscribers_count"`
 }
 
 type Repo struct {
-	Name     *string `json:"name"`     // 仓库名称
-	Readme   *string `json:"readme"`   // README 内容
-	Language *string `json:"language"` // 使用最多的编程语言
+	Name     string `json:"name"`     // 仓库名称
+	Readme   string `json:"readme"`   // README 内容
+	Language string `json:"language"` // 使用最多的编程语言
 }
 
 type UserEvent struct {

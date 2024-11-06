@@ -2,8 +2,8 @@ package service
 
 import (
 	"context"
+	llmv1 "github.com/GitEval/GitEval-Backend/client/gen"
 	"github.com/GitEval/GitEval-Backend/model"
-	"github.com/GitEval/GitEval-Backend/pkg/llm"
 	"github.com/google/go-github/v50/github"
 )
 
@@ -17,10 +17,10 @@ type GitHubAPIProxy interface {
 }
 
 // LLMClientProxy 接口定义
-type LLMClientProxy interface {
-	GetDomain(ctx context.Context, req llm.GetDomainRequest) (llm.GetDomainResponse, error)
-	GetEvaluation(ctx context.Context, req llm.GetEvaluationRequest) (llm.GetEvaluationResponse, error)
-}
+//type LLMClientProxy interface {
+//	GetDomain(ctx context.Context, req llm.GetDomainRequest) (llm.GetDomainResponse, error)
+//	GetEvaluation(ctx context.Context, req llm.GetEvaluationRequest) (llm.GetEvaluationResponse, error)
+//}
 
 type UserServiceProxy interface {
 	InitUser(ctx context.Context, u model.User) (err error)
@@ -31,15 +31,15 @@ type UserServiceProxy interface {
 type AuthService struct {
 	githubAPI GitHubAPIProxy
 	u         UserServiceProxy
-	llmClient LLMClientProxy
+	l         llmv1.LLMServiceClient
 }
 
-func NewAuthService(u UserServiceProxy, api GitHubAPIProxy, llmClient LLMClientProxy) *AuthService {
+func NewAuthService(u UserServiceProxy, api GitHubAPIProxy, l llmv1.LLMServiceClient) *AuthService {
 	return &AuthService{
 		u: u,
 		//因为让其成为中枢，必然要依赖注入到这个authService
 		githubAPI: api,
-		llmClient: llmClient,
+		l:         l,
 	}
 }
 
@@ -67,12 +67,12 @@ func (s *AuthService) CallBack(ctx context.Context, code string) (userId int64, 
 			LoginName:         userInfo.GetLogin(),
 			ID:                userInfo.GetID(),
 			AvatarURL:         userInfo.GetAvatarURL(),
-			Name:              userInfo.Name,
-			Company:           userInfo.Company,
-			Blog:              userInfo.Blog,
-			Location:          userInfo.Location,
+			Name:              userInfo.GetName(),
+			Company:           userInfo.GetName(),
+			Blog:              userInfo.GetBlog(),
+			Location:          userInfo.GetLocation(),
 			Email:             userInfo.GetEmail(),
-			Bio:               userInfo.Bio,
+			Bio:               userInfo.GetBio(),
 			PublicRepos:       userInfo.GetPublicRepos(),
 			Followers:         userInfo.GetFollowers(),
 			Following:         userInfo.GetFollowing(),

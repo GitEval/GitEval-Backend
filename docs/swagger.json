@@ -4,16 +4,16 @@
         "contact": {}
     },
     "paths": {
-        "/api/v1/auth/login": {
+        "/api/v1/auth/callBack": {
             "get": {
-                "description": "github重定向,用来初始化这个用户,会返回一个user_id,userid是用在后续的请求上的",
+                "description": "使用code进行最终登录同时异步用来初始化这个用户,会返回一个token",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Auth"
                 ],
-                "summary": "github重定向",
+                "summary": "使用code进行最终登录",
                 "parameters": [
                     {
                         "type": "string",
@@ -40,6 +40,38 @@
                                     }
                                 }
                             ]
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Err"
+                        }
+                    },
+                    "500": {
+                        "description": "内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Err"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/login": {
+            "get": {
+                "description": "github用户登录授权接口,会自动重定向到github的授权接口上",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "github用户登录授权接口",
+                "responses": {
+                    "200": {
+                        "description": "登录成功",
+                        "schema": {
+                            "$ref": "#/definitions/response.Success"
                         }
                     },
                     "400": {

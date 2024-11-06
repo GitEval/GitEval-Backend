@@ -134,9 +134,10 @@ func (g *GitHubAPI) CalculateScore(ctx context.Context, id int64, name string) f
 	if !exist {
 		// 创建一个 GitHub 客户端（无需认证）
 		client = github.NewClient(nil) // nil 表示没有使用任何认证
+	} else {
+		client = val.(*github.Client)
 	}
 
-	client = val.(*github.Client)
 	repos, _, err := client.Repositories.List(ctx, name, nil)
 	if err != nil {
 		log.Printf("Error getting repositories: %v\n", err)
@@ -191,9 +192,9 @@ func (g *GitHubAPI) GetAllRepositories(ctx context.Context, loginName string, us
 			log.Println("get github readme failed:", err)
 		}
 		resp = append(resp, &model.Repo{
-			Name:     repo.Name,
-			Readme:   &me,
-			Language: repo.Language,
+			Name:     repo.GetName(),
+			Readme:   me,
+			Language: repo.GetLanguage(),
 		})
 	}
 	return resp
@@ -279,7 +280,7 @@ func (g *GitHubAPI) GetAllUserEvents(ctx context.Context, username string, clien
 		// 如果该repo的UserEvent还未创建，则初始化
 		if _, exists := userEventsMap[repoName]; !exists {
 			//尝试初始化
-			userEventsMap[repoName] = &model.UserEvent{Repo: model.RepoInfo{Name: &repoName}}
+			userEventsMap[repoName] = &model.UserEvent{Repo: model.RepoInfo{Name: repoName}}
 			//如果存在于用户的仓库中则直接完全初始化这个仓库
 			if _, ok := info[repoName]; ok {
 				userEventsMap[repoName].Repo = *info[repoName]
@@ -329,15 +330,14 @@ func (g *GitHubAPI) getUserAllRepoInfo(ctx context.Context, client *github.Clien
 		// 将获取到的仓库信息存入 map
 		for _, repo := range repos {
 			if repo.Name != nil {
-				created_at := repo.CreatedAt.Time.String()
 				name := repo.GetFullName()
 				repoMap[name] = &model.RepoInfo{
-					Name:             &name,
-					Description:      repo.Description,
-					StargazersCount:  repo.StargazersCount,
-					ForksCount:       repo.ForksCount,
-					CreatedAt:        &created_at,
-					SubscribersCount: repo.SubscribersCount,
+					Name:             name,
+					Description:      repo.GetDescription(),
+					StargazersCount:  repo.GetStargazersCount(),
+					ForksCount:       repo.GetForksCount(),
+					CreatedAt:        repo.CreatedAt.Time.String(),
+					SubscribersCount: repo.GetSubscribersCount(),
 				}
 			}
 

@@ -1,0 +1,84 @@
+syntax = "proto3";
+package llm;
+option go_package="../gen;llm";
+
+
+// 定义 Repo 消息
+message Repo {
+  string name = 1;
+  string readme = 2;
+  string language = 3;
+}
+
+// 定义 DomainRequest 消息
+message GetDomainRequest {
+  repeated Repo repos = 1;  // 仓库列表
+  string bio = 2;  // 个人简介
+}
+
+// 定义 Domain 消息
+message Domain {
+  string domain = 1;
+  float confidence = 2;
+}
+
+// 定义 DomainResponse 消息
+message GetDomainResponse {
+  repeated Domain domains = 1;  // 响应消息内容
+}
+
+// 定义 RepoInfo 消息
+message RepoInfo {
+  string name = 1;
+  string description = 2;
+  int32 stargazers_count = 3;
+  int32 forks_count = 4;
+  string created_at = 5;
+  int32 subscribers_count = 6;
+}
+
+// 定义 UserEvent 消息
+message UserEvent {
+  RepoInfo repo = 1;  // 仓库信息
+  int32 commit_count = 2;
+  int32 issues_count = 3;
+  int32 pull_request_count = 4;
+}
+
+// 定义 GetEvaluationRequest 消息
+message GetEvaluationRequest {
+  string bio = 1;  // 个人简介
+  int32 followers = 2;
+  int32 following = 3;
+  int32 total_private_repos = 4;
+  int32 total_public_repos = 5;
+  repeated UserEvent user_events = 6;
+  repeated string domains = 7;  // 技术领域
+}
+
+// 定义 EvaluationResponse 消息
+message GetEvaluationResponse {
+  string evaluation = 1;
+}
+
+// 定义 AreaRequest 消息
+message GetAreaRequest {
+  string bio = 1;  // 个人简介
+  string company = 2;
+  string location = 3;
+  repeated string follower_areas = 4;  // 粉丝的地区
+  repeated string following_areas = 5;  // 追随者的地区
+}
+
+// 定义 AreaResponse 消息
+message GetAreaResponse {
+  string area = 1;
+  float confidence = 2;
+}
+
+// 定义服务
+service LLMService {
+  rpc GetEvaluation (GetEvaluationRequest) returns (GetEvaluationResponse);
+  rpc GetArea (GetAreaRequest) returns (GetAreaResponse);
+  rpc GetDomain (GetDomainRequest) returns (GetDomainResponse);
+}

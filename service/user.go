@@ -5,9 +5,9 @@ import (
 	"errors"
 	_ "errors"
 	"fmt"
+	llmv1 "github.com/GitEval/GitEval-Backend/client/gen"
 	"github.com/GitEval/GitEval-Backend/errs"
 	"github.com/GitEval/GitEval-Backend/model"
-	"github.com/GitEval/GitEval-Backend/pkg/llm"
 	"github.com/google/go-github/v50/github"
 	"log"
 	"sort"
@@ -47,11 +47,13 @@ type GithubProxy interface {
 	GetClientFromMap(userID int64) (*github.Client, bool)
 	GetAllUserEvents(ctx context.Context, username string, client *github.Client) ([]model.UserEvent, error)
 }
-type LLMProxy interface {
-	GetArea(ctx context.Context, req llm.GetAreaRequest) (llm.GetAreaResponse, error)
-	GetDomain(ctx context.Context, req llm.GetDomainRequest) (llm.GetDomainResponse, error)
-	GetEvaluation(ctx context.Context, req llm.GetEvaluationRequest) (llm.GetEvaluationResponse, error)
-}
+
+//弃用http版本
+//type LLMProxy interface {
+//	GetArea(ctx context.Context, req llm.GetAreaRequest) (llm.GetAreaResponse, error)
+//	GetDomain(ctx context.Context, req llm.GetDomainRequest) (llm.GetDomainResponse, error)
+//	GetEvaluation(ctx context.Context, req llm.GetEvaluationRequest) (llm.GetEvaluationResponse, error)
+//}
 
 type UserService struct {
 	user    UserDAOProxy
@@ -59,10 +61,10 @@ type UserService struct {
 	domain  DomainDAOProxy
 	tx      Transaction
 	g       GithubProxy
-	l       LLMProxy
+	l       llmv1.LLMServiceClient
 }
 
-func NewUserService(user UserDAOProxy, contact ContactDAOProxy, domain DomainDAOProxy, transaction Transaction, g GithubProxy, l LLMProxy) *UserService {
+func NewUserService(user UserDAOProxy, contact ContactDAOProxy, domain DomainDAOProxy, transaction Transaction, g GithubProxy, l llmv1.LLMServiceClient) *UserService {
 	return &UserService{
 		user:    user,
 		contact: contact,
@@ -80,10 +82,7 @@ func (s *UserService) InitUser(ctx context.Context, u model.User) (err error) {
 	)
 
 	following := s.g.GetFollowing(ctx, u.ID)
-	users = append(users, following...)
 	followers := s.g.GetFollowers(ctx, u.ID)
-	users = append(users, followers...)
-
 	var (
 		followersLoc = make([]string, len(followers))
 		followingLoc = make([]string, len(following))
@@ -91,23 +90,22 @@ func (s *UserService) InitUser(ctx context.Context, u model.User) (err error) {
 
 	// 获取followers和following的Location
 	// 顺便计算他们的分数
-	for _, v := range followers {
-		if v.Location != nil {
-			followersLoc = append(followersLoc, *v.Location)
-		}
-		v.Score = s.g.CalculateScore(ctx, u.ID, v.LoginName)
+	for i := range followers {
+		followersLoc = append(followersLoc, followers[i].Location)
+		followers[i].Score = s.g.CalculateScore(ctx, u.ID, followers[i].LoginName)
 	}
+	users = append(users, following...)
 
-	for _, v := range following {
-		if v.Location != nil {
-			followingLoc = append(followingLoc, *v.Location)
-		}
-		v.Score = s.g.CalculateScore(ctx, u.ID, v.LoginName)
+	for i := range following {
+		followingLoc = append(followingLoc, following[i].Location)
+		following[i].Score = s.g.CalculateScore(ctx, u.ID, following[i].LoginName)
 	}
+	users = append(users, followers...)
 
 	//将user二次存入,这个地方主要是为了能够保证每次用户上号这个评分都能更新
 	u.Score = s.g.CalculateScore(ctx, u.ID, u.LoginName)
 	users = append(users, u)
+
 	//得到关系
 	followingContact := getContact(u.ID, following, Following)
 	followersContact := getContact(u.ID, followers, Followers)
@@ -145,12 +143,8 @@ func (s *UserService) InitUser(ctx context.Context, u model.User) (err error) {
 	// 测试通过,花费时间大概要到10s左右
 	go func() {
 		ctx2 := context.Background()
-		var bio string
-		if u.Bio != nil {
-			bio = *u.Bio
-		}
 		//获取这个用户的主要技术领域
-		userDomain := s.generateDomain(ctx2, u.LoginName, bio, u.ID)
+		userDomain := s.generateDomain(ctx2, u.LoginName, u.Bio, u.ID)
 		//将获取的结果转化成对应的model
 		domains := StringToDomains(userDomain, u.ID)
 		//先删除之前的记录,这个地方不够优雅
@@ -208,18 +202,21 @@ func (s *UserService) GetLeaderboard(ctx context.Context, userId int64) ([]model
 		AvatarURL: user.AvatarURL,
 		Score:     user.Score,
 	})
+
 	//获取following
 	followings, err := s.user.GetFollowingUsersJoinContact(ctx, userId)
 	if err != nil {
 		log.Println("get following failed")
 		return nil, err
 	}
+
 	//获取followers
 	followers, err := s.user.GetFollowersUsersJoinContact(ctx, userId)
 	if err != nil {
 		log.Println("get followers failed")
 		return nil, err
 	}
+
 	leaderboard = append(leaderboard, getLeaderboard(followings)...)
 	leaderboard = append(leaderboard, getLeaderboard(followers)...)
 	//去重
@@ -256,32 +253,33 @@ func (s *UserService) GetEvaluation(ctx context.Context, userId int64) (string, 
 		return "", err
 	}
 
-	var userEvents []llm.UserEvent
+	var userEvents []*llmv1.UserEvent
 	for _, event := range events {
-		userEvents = append(userEvents, llm.UserEvent{
-			Repo: &llm.RepoInfo{
+		userEvents = append(userEvents, &llmv1.UserEvent{
+			Repo: &llmv1.RepoInfo{
 				Name:             event.Repo.Name,
 				Description:      event.Repo.Description,
-				StargazersCount:  event.Repo.StargazersCount,
-				ForksCount:       event.Repo.ForksCount,
+				StargazersCount:  int32(event.Repo.StargazersCount),
+				ForksCount:       int32(event.Repo.ForksCount),
 				CreatedAt:        event.Repo.CreatedAt,
-				SubscribersCount: event.Repo.SubscribersCount,
+				SubscribersCount: int32(event.Repo.SubscribersCount),
 			},
-			CommitCount:      event.PushCount,
-			IssuesCount:      event.IssuesCount,
-			PullRequestCount: event.PullRequestCount,
+			CommitCount:      int32(event.PushCount),
+			IssuesCount:      int32(event.IssuesCount),
+			PullRequestCount: int32(event.PullRequestCount),
 		})
 	}
+
 	//此处允许获取值为空而不报错,因为可能用户没有成功获取领域就直接开始做评价了
 	domains, _ := s.domain.GetDomainById(ctx, user.ID)
-	evaluation, err := s.l.GetEvaluation(ctx, llm.GetEvaluationRequest{
+	evaluation, err := s.l.GetEvaluation(ctx, &llmv1.GetEvaluationRequest{
 		Bio:               user.Bio,
-		Followers:         len(followers),
-		Following:         len(following),
-		TotalPrivateRepos: user.TotalPrivateRepos,
-		TotalPublicRepos:  user.PublicRepos,
+		Followers:         int32(len(followers)),
+		Following:         int32(len(following)),
+		TotalPrivateRepos: int32(user.TotalPrivateRepos),
+		TotalPublicRepos:  int32(user.PublicRepos),
 		UserEvents:        userEvents,
-		Domains:           &domains,
+		Domains:           domains,
 	})
 	if err != nil {
 		return "", err
@@ -312,15 +310,11 @@ func (s *UserService) GetNationByUserId(ctx context.Context, userId int64) (stri
 
 	// 获取followers和following的Loction
 	for _, v := range followers {
-		if v.Location != nil {
-			followersLoc = append(followersLoc, *v.Location)
-		}
+		followersLoc = append(followersLoc, v.Location)
 	}
 
 	for _, v := range following {
-		if v.Location != nil {
-			followingLoc = append(followingLoc, *v.Location)
-		}
+		followingLoc = append(followingLoc, v.Location)
 	}
 
 	Nation := s.generateNationality(ctx, user.Bio, user.Company, user.Location, followersLoc, followingLoc)
@@ -340,16 +334,7 @@ func (s *UserService) GetDomainByUserId(ctx context.Context, userId int64) ([]st
 		return nil, err
 	}
 
-	// 测试通过,花费时间大概要到10s左右
-	var bio string
-	//获取这个用户的主要技术领域
-	if user.Bio == nil {
-		bio = ""
-	} else {
-		bio = *user.Bio
-	}
-
-	userDomain := s.generateDomain(ctx, user.LoginName, bio, user.ID)
+	userDomain := s.generateDomain(ctx, user.LoginName, user.Bio, user.ID)
 	//将获取的结果转化成对应的model
 	domains := StringToDomains(userDomain, user.ID)
 	//先删除之前的记录
@@ -435,8 +420,8 @@ func removeTheSame(s []model.Leaderboard) []model.Leaderboard {
 }
 
 // 生成国籍
-func (s *UserService) generateNationality(ctx context.Context, bio, company, location *string, followerLoc, followingloc []string) string {
-	res, err := s.l.GetArea(ctx, llm.GetAreaRequest{
+func (s *UserService) generateNationality(ctx context.Context, bio, company, location string, followerLoc, followingloc []string) string {
+	res, err := s.l.GetArea(ctx, &llmv1.GetAreaRequest{
 		Bio:            bio,
 		Company:        company,
 		Location:       location,
@@ -457,15 +442,19 @@ func (s *UserService) generateDomain(ctx context.Context, LoginName, bio string,
 	if len(repos) == 0 {
 		return nil
 	}
-	var r = make([]llm.Repo, len(repos))
-	for k, v := range repos {
-		r[k] = llm.Repo{
-			Name:         v.Name,
-			MainLanguage: v.Language,
-			Readme:       v.Readme,
+
+	// 使用 make 来预分配切片大小，提升性能
+	r := make([]*llmv1.Repo, 0, len(repos))
+	for _, v := range repos {
+		repo := &llmv1.Repo{
+			Name:     v.Name,
+			Language: v.Language,
+			Readme:   v.Readme,
 		}
+		r = append(r, repo)
 	}
-	domains, err := s.l.GetDomain(ctx, llm.GetDomainRequest{
+
+	domains, err := s.l.GetDomain(ctx, &llmv1.GetDomainRequest{
 		Repos: r,
 		Bio:   bio,
 	})
@@ -474,8 +463,8 @@ func (s *UserService) generateDomain(ctx context.Context, LoginName, bio string,
 		return nil
 	}
 
-	//添加置信度
-	var resp []string
+	// 添加置信度并格式化输出
+	resp := make([]string, 0, len(domains.Domains))
 	for _, domain := range domains.Domains {
 		resp = append(resp, fmt.Sprintf("%s|(trust:%.2f)", domain.Domain, domain.Confidence))
 	}
