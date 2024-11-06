@@ -7,6 +7,7 @@ import (
 	"github.com/GitEval/GitEval-Backend/conf"
 	"github.com/GitEval/GitEval-Backend/model"
 	"github.com/GitEval/GitEval-Backend/pkg/github/expireMap"
+	"github.com/GitEval/GitEval-Backend/pkg/tool"
 	"github.com/google/go-github/v50/github"
 	"golang.org/x/oauth2"
 	"log"
@@ -367,10 +368,12 @@ func (g *GitHubAPI) parseRepoURL(url string) (owner, repo string, err error) {
 func calculateScore(repos []*github.Repository) float64 {
 	var totalScore float64
 	for _, repo := range repos {
-		if repo.StargazersCount != nil && repo.ForksCount != nil && repo.Size != nil {
-			// 评分公式示例
-			score := float64(*repo.StargazersCount)*0.5 + float64(*repo.ForksCount)*0.3 + float64(*repo.Size/1024)*0.2
-			totalScore += score
+		totalScore += float64(tool.SafeInt(repo.StargazersCount))*0.6 + float64(tool.SafeInt(repo.ForksCount))*0.9 + float64(tool.SafeInt(repo.OpenIssuesCount))*2
+
+		if repo.GetFork() || strings.Contains(repo.GetName(), "github.io") {
+			totalScore += float64(tool.SafeInt(repo.Size)) * 0.001 / 1024
+		} else {
+			totalScore += float64(tool.SafeInt(repo.Size)) * 0.1 / 1024
 		}
 	}
 	return totalScore
