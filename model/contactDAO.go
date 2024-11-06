@@ -34,6 +34,10 @@ func (g GormContactDAO) GetCountOfFollowers(ctx context.Context, id int64) (cnt 
 }
 
 func (g GormContactDAO) CreateContacts(ctx context.Context, contacts []FollowingContact) error {
+	if len(contacts) == 0 {
+		return nil
+	}
+
 	db := g.data.DB(ctx).Table(ContactTable)
 	err := db.Clauses(clause.OnConflict{DoNothing: true}).Create(&contacts).Error
 	if err != nil {

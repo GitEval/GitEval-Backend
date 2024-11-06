@@ -8,6 +8,7 @@ import (
 	llmv1 "github.com/GitEval/GitEval-Backend/client/gen"
 	"github.com/GitEval/GitEval-Backend/errs"
 	"github.com/GitEval/GitEval-Backend/model"
+	"github.com/GitEval/GitEval-Backend/pkg/llm"
 	"github.com/google/go-github/v50/github"
 	"log"
 	"sort"
@@ -48,12 +49,6 @@ type GithubProxy interface {
 	GetAllUserEvents(ctx context.Context, username string, client *github.Client) ([]model.UserEvent, error)
 }
 
-//弃用http版本
-//type LLMProxy interface {
-//	GetArea(ctx context.Context, req llm.GetAreaRequest) (llm.GetAreaResponse, error)
-//	GetDomain(ctx context.Context, req llm.GetDomainRequest) (llm.GetDomainResponse, error)
-//	GetEvaluation(ctx context.Context, req llm.GetEvaluationRequest) (llm.GetEvaluationResponse, error)
-//}
 
 type UserService struct {
 	user    UserDAOProxy
@@ -407,14 +402,14 @@ func getLeaderboard(users []model.User) []model.Leaderboard {
 func removeTheSame(s []model.Leaderboard) []model.Leaderboard {
 	var (
 		result = make([]model.Leaderboard, 0)
-		mp     = make(map[int64]float64)
+		mp     = make(map[int64]model.Leaderboard)
 	)
 
 	for _, v := range s {
-		mp[v.UserID] = v.Score
+		mp[v.UserID] = v
 	}
-	for k, v := range mp {
-		result = append(result, model.Leaderboard{UserID: k, Score: v})
+	for _, v := range mp {
+		result = append(result, v)
 	}
 	return result
 }

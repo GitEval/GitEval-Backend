@@ -79,10 +79,3 @@ func TransformUser(userInfo *github.User) User {
 	}
 }
 
-func TransformUsers(users []*github.User) []User {
-	var transformedUsers []User
-	for _, user := range users {
-		transformedUsers = append(transformedUsers, TransformUser(user))
-	}
-	return transformedUsers
-}
