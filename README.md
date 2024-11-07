@@ -26,85 +26,71 @@ docker tag crpi-vgud82zncz8nwfuc.cn-hangzhou.personal.cr.aliyuncs.com/qianchengs
 ## 项目结构
 
 ```
-│  Dockerfile		##构建镜像
-│  go.mod	## go mod
-│  go.sum
-│  main.go	##程序的入口
-│  README.md
-│  wire.go	## wire文件，生成依赖
-│  wire_gen.go	## 由wire.go生成
-│
-├─api	##存放api相关
-│  ├─request	##请求相关结构体
-│  │      auth.go	
-│  │      user.go
-│  │
-│  ├─response	##响应相关结构体
-│  │      response.go	
-│  │
-│  └─route	##路由
-│          route.go
-│
-├─client	##请求llm,使用rpc
-│  │  client.go
-│  │  llm.go
-│  │
-│  ├─gen
-│  │      llm.pb.go
-│  │      llm_grpc.pb.go
-│  │
-│  └─proto
-│          llm.proto
-│
-├─conf	##配置相关
-│  │  conf.go	##配置相关结构体
-│  │  config-example.yaml	##配置信息
-│  │  setting.go	##viper
-│
-├─controller	## controller层
-│      auth.go	##鉴权
-│      controller.go	##依赖集合
-│      user.go	##用户
-│
-├─docs	##接口文档
-│      docs.go
-│      swagger.json
-│      swagger.yaml
-│
-├─middleware	##中间件
-│      jwt.go	##jwt
-│      middleware.go
-│
-├─model	##结构体
-│  │  contactDAO.go ##关系持久化
-│  │  data.go   
-│  │  domain.go 
-│  │  domainDAO.go  ##领域持久化
-│  │  model.go  
-│  │  type.go
-│  │  user.go
-│  │  userDAO.go    ##用户持久化
-│  │
-│  └─cache	##redis相关
-│          cache.go
-│          redis.go
-│
-├─pkg
-│  │  pkg.go
-│  │
-│  ├─github	##请求github相关
-│  │  │  github.go
-│  │  │
-│  │  └─expireMap	##封装sync.Map，有过期功能
-│  │          map.go
-│  │
-│  └─tool	##工具
-│          changeType.go
-│
-└─service	## 服务层
-        auth.go
-        service.go
-        user.go
+GitEval-Backend
+├── api
+│   ├── request
+│   │   ├── auth.go
+│   │   └── user.go
+│   ├── response
+│   │   └── response.go
+│   └── route
+│       └── route.go
+├── client
+│   ├── gen
+│   │   ├── llm.pb.go
+│   │   └── llm_grpc.pb.go
+│   └── proto
+│       ├── llm.proto
+│       ├── client.go
+│       └── llm.go
+├── conf
+│   ├── conf.go
+│   ├── config.yaml
+│   ├── config-example.yaml
+│   └── setting.go
+├── controller
+│   ├── auth.go
+│   ├── controller.go
+│   └── user.go
+├── docs
+│   ├── docs.go
+│   ├── swagger.json
+│   └── swagger.yaml
+├── middleware
+│   ├── jwt.go
+│   └── middleware.go
+├── model
+│   ├── cache
+│   │   ├── cache.go
+│   │   └── redis.go
+│   ├── contactDAO.go
+│   ├── data.go
+│   ├── domain.go
+│   ├── domainDAO.go
+│   ├── model.go
+│   ├── type.go
+│   ├── user.go
+│   └── userDAO.go
+├── pkg
+│   ├── github
+│   │   ├── expireMap
+│   │   │   └── map.go
+│   │   └── github.go
+│   └── tool
+│       ├── changeType.go
+│       └── pkg.go
+├── service
+│   ├── auth.go
+│   ├── service.go
+│   └── user.go
+├── .dockerignore
+├── .gitignore
+├── Dockerfile
+├── go.mod
+├── main.go
+├── README.md
+├── wire.go
+└── wire_gen.go
 
 ```
 
