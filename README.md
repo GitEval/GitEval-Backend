@@ -45,7 +45,7 @@ docker tag crpi-vgud82zncz8nwfuc.cn-hangzhou.personal.cr.aliyuncs.com/qianchengs
 │  └─route	##路由
 │          route.go
 │
-├─client	##请求llm
+├─client	##请求llm,使用rpc
 │  │  client.go
 │  │  llm.go
 │  │
@@ -72,18 +72,18 @@ docker tag crpi-vgud82zncz8nwfuc.cn-hangzhou.personal.cr.aliyuncs.com/qianchengs
 │      swagger.yaml
 │
 ├─middleware	##中间件
-│      jwt.go	##中间件
+│      jwt.go	##jwt
 │      middleware.go
 │
 ├─model	##结构体
-│  │  contactDAO.go
-│  │  data.go
-│  │  domain.go
-│  │  domainDAO.go
-│  │  model.go
+│  │  contactDAO.go ##关系持久化
+│  │  data.go   
+│  │  domain.go 
+│  │  domainDAO.go  ##领域持久化
+│  │  model.go  
 │  │  type.go
 │  │  user.go
-│  │  userDAO.go
+│  │  userDAO.go    ##用户持久化
 │  │
 │  └─cache	##redis相关
 │          cache.go
