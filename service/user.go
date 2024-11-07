@@ -445,6 +445,7 @@ func (s *UserService) generateDomain(ctx context.Context, LoginName, bio string,
 			Name:     v.Name,
 			Language: v.Language,
 			Readme:   v.Readme,
+			Commit:   v.Commit,
 		}
 		r = append(r, repo)
 	}

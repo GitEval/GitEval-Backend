@@ -13,6 +13,7 @@ type Repo struct {
 	Name     string `json:"name"`
 	Readme   string `json:"readme"`
 	Language string `json:"language"` // 使用最多的编程语言
+	Commit   int32  `json:"commit_count"`
 }
 
 type UserEvent struct {

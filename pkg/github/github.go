@@ -195,11 +195,37 @@ func (g *GitHubAPI) GetAllRepositories(ctx context.Context, loginName string, us
 			Name:     repo.GetName(),
 			Readme:   me,
 			Language: repo.GetLanguage(),
+			Commit:   g.getCommitsCount(ctx, loginName, client, repo.GetName()),
 		})
 	}
 	return resp
 }
 
+func (g *GitHubAPI) getCommitsCount(ctx context.Context, loginName string, client *github.Client, repoName string) int32 {
+
+	// 获取指定仓库的提交记录
+	commits, _, err := client.Repositories.ListCommits(ctx, loginName, repoName, &github.CommitsListOptions{
+		SHA:         "",          // 空字符串表示获取默认分支的提交记录
+		Since:       time.Time{}, // 不设置过滤条件，获取所有提交
+		Until:       time.Time{},
+		Author:      loginName,                        // 按作者筛选，指定用户的提交
+		ListOptions: github.ListOptions{PerPage: 100}, // 一次获取100个提交记录
+	})
+	if err != nil {
+		return 0
+	}
+
+	// 统计提交次数
+	var commitCount int32
+	for _, commit := range commits {
+		// 判断提交的作者是否是目标用户
+		if commit.GetAuthor() != nil && commit.GetAuthor().GetLogin() == loginName {
+			commitCount++
+		}
+	}
+
+	return commitCount
+}
 func (g *GitHubAPI) GetReadMe(ctx context.Context, repoUrl string, client *github.Client) (readme string, err error) {
 	// 提取用户名和仓库名
 	owner, repo, err := g.parseRepoURL(repoUrl)

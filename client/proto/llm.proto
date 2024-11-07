@@ -8,6 +8,7 @@ message Repo {
   string name = 1;
   string readme = 2;
   string language = 3;
+  int32 commit =4;
 }
 
 // 定义 DomainRequest 消息
