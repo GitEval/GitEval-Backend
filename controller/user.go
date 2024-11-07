@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/GitEval/GitEval-Backend/api/request"
 	"github.com/GitEval/GitEval-Backend/api/response"
-	"github.com/GitEval/GitEval-Backend/errs"
 	"github.com/GitEval/GitEval-Backend/model"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -47,7 +46,7 @@ func (c *UserController) GetUser(ctx *gin.Context) {
 
 	user, err := c.userService.GetUserById(ctx, UserID)
 	if err != nil {
-		ctx.JSON(http.StatusOK, response.Err{
+		ctx.JSON(http.StatusInternalServerError, response.Err{
 			Err: fmt.Errorf("GetUserById: %w", err),
 		})
 		return
@@ -82,7 +81,7 @@ func (c *UserController) GetRanking(ctx *gin.Context) {
 
 	rankings, err := c.userService.GetLeaderboard(ctx, UserID)
 	if err != nil {
-		ctx.JSON(http.StatusOK, response.Err{
+		ctx.JSON(http.StatusInternalServerError, response.Err{
 			Err: fmt.Errorf("GetLeaderboard: %w", err),
 		})
 		return
@@ -110,7 +109,7 @@ func (c *UserController) GetEvaluation(ctx *gin.Context) {
 
 	evaluation, err := c.userService.GetEvaluation(ctx, UserID)
 	if err != nil {
-		ctx.JSON(http.StatusOK, response.Err{Err: fmt.Errorf("GetEvaluation: %w", err)})
+		ctx.JSON(http.StatusInternalServerError, response.Err{Err: fmt.Errorf("GetEvaluation: %w", err)})
 		return
 	}
 
@@ -138,7 +137,7 @@ func (c *UserController) GetNation(ctx *gin.Context) {
 
 	nation, err := c.userService.GetNationByUserId(ctx, UserID)
 	if err != nil {
-		ctx.JSON(http.StatusOK, response.Err{Err: fmt.Errorf("GetNation: %w", err)})
+		ctx.JSON(http.StatusInternalServerError, response.Err{Err: fmt.Errorf("GetNation: %w", err)})
 		return
 	}
 	ctx.JSON(http.StatusOK, response.Success{Data: response.NationResp{Nation: nation}, Msg: "success"})
@@ -166,7 +165,7 @@ func (c *UserController) GetDomain(ctx *gin.Context) {
 
 	domain, err := c.userService.GetDomainByUserId(ctx, UserID)
 	if err != nil {
-		ctx.JSON(http.StatusOK, response.Err{Err: fmt.Errorf("GetDomain: %w", err)})
+		ctx.JSON(http.StatusInternalServerError, response.Err{Err: fmt.Errorf("GetDomain: %w", err)})
 		return
 	}
 	ctx.JSON(http.StatusOK, response.Success{Data: response.DomainResp{Domain: domain}, Msg: "success"})
@@ -194,21 +193,15 @@ func (c *UserController) SearchUser(ctx *gin.Context) {
 	}
 
 	users, err := c.userService.SearchUser(ctx, req.Nation, req.Domain, req.Page, req.PageSize)
-	switch err {
-	case errs.LoginFailErr:
-		//返回一个重定向的状态码,让前端做重定向,因为后端得不到实际的ip,我暂时只对这里进行了处理,看看cc有没有更好的想法
-		ctx.JSON(http.StatusFound, response.Err{
-			Err: fmt.Errorf("SearchUser: %w", err),
-		})
-		return
-	case nil:
-		ctx.JSON(http.StatusOK, response.Success{Data: response.SearchResp{Users: users}, Msg: "success"})
-	default:
-		ctx.JSON(http.StatusOK, response.Err{
-			Err: fmt.Errorf("SearchUser: %w", err),
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, response.Err{
+			Err: fmt.Errorf("FailSearch: %w", err),
 		})
 		return
 	}
+
+	ctx.JSON(http.StatusOK, response.Success{Data: response.SearchResp{Users: users}, Msg: "success"})
+	return
 }
 
 // GetUserInfo 根据userid获取用户详细信息
@@ -232,7 +225,7 @@ func (c *UserController) GetUserInfo(ctx *gin.Context) {
 
 	user, err := c.userService.GetUserById(ctx, req.UserId)
 	if err != nil {
-		ctx.JSON(http.StatusOK, response.Err{
+		ctx.JSON(http.StatusInternalServerError, response.Err{
 			Err: fmt.Errorf("GetUserById: %w", err),
 		})
 		return

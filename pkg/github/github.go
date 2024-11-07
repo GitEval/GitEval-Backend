@@ -394,12 +394,12 @@ func (g *GitHubAPI) parseRepoURL(url string) (owner, repo string, err error) {
 func calculateScore(repos []*github.Repository) float64 {
 	var totalScore float64
 	for _, repo := range repos {
-		totalScore += float64(tool.SafeInt(repo.StargazersCount))*0.6 + float64(tool.SafeInt(repo.ForksCount))*0.9 + float64(tool.SafeInt(repo.OpenIssuesCount))*2
+		totalScore += float64(tool.SafeInt(repo.StargazersCount))*0.6 + float64(tool.SafeInt(repo.ForksCount))*0.9 + float64(tool.SafeInt(repo.OpenIssuesCount))*2 + 1
 
 		if repo.GetFork() || strings.Contains(repo.GetName(), "github.io") {
 			totalScore += float64(tool.SafeInt(repo.Size)) * 0.001 / 1024
 		} else {
-			totalScore += float64(tool.SafeInt(repo.Size)) * 0.1 / 1024
+			totalScore += float64(tool.SafeInt(repo.Size)) * 0.1 / 500
 		}
 	}
 	return totalScore

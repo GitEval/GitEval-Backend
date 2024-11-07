@@ -6,7 +6,6 @@ import (
 	_ "errors"
 	"fmt"
 	llmv1 "github.com/GitEval/GitEval-Backend/client/gen"
-	"github.com/GitEval/GitEval-Backend/errs"
 	"github.com/GitEval/GitEval-Backend/model"
 	"github.com/google/go-github/v50/github"
 	"log"
@@ -240,7 +239,7 @@ func (s *UserService) GetEvaluation(ctx context.Context, userId int64) (string, 
 
 	client, ok := s.g.GetClientFromMap(userId)
 	if !ok {
-		return "", errs.LoginFailErr
+		return "", errors.New("login fail!")
 	}
 
 	events, err := s.g.GetAllUserEvents(ctx, user.LoginName, client)
