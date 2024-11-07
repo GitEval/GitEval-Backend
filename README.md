@@ -2,6 +2,7 @@
 
 ## 如何运行程序？
 1、首先，将`conf/config-example.yaml`改为`config.yaml`，然后配置相关信息
+
 2、构建镜像`docker build -t giteval:v1 .`
 或者考虑直接从阿里云拉取本服务的镜像（已上传）
 
